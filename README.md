@@ -10,4 +10,9 @@ An implementation of a deep learning model for citation recommendation.
 
 ## Questions
 * Which format for the written paper?
+* Which language to use?
 * Can we submit later due to Timo holiday in august?
+* Presentation outline  
+    How important is explaining the model? (eg.g. start from scratch: What is a CNN...)
+    How important is explaining our approach and what we want to do? (e.g. What we do to improve the model)
+    How important is explaining the parameters? (e.g. embedding dimensions etc.)
