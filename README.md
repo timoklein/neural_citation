@@ -7,3 +7,7 @@ An implementation of a deep learning model for citation recommendation.
 3. Reimplement the author's code in torch
 4. Modify code, change original code hyperparameters
 5. Extend model to work with other dataset [unarxiv? MAG?] 
+
+## Questions
+* Which format for the written paper?
+* Can we submit later due to Timo holiday in august?
