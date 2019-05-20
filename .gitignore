@@ -1,3 +1,6 @@
+
+# OWN IGNORED FILES & FOLDERS
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
