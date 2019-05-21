@@ -22,7 +22,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
 import sys
 import threading
-import cPickle
+import pickle
 from logging.config import dictConfig
 import logging
 import json
@@ -398,7 +398,7 @@ dictConfig(LOGGING_CONFIG)
 if restore:
     tf.logging.info('Resuming from directory: %s' % restore_directory)
 
-df = cPickle.load(open('title_context_df.pkl'))
+df = pickle.load(open('title_context_df.pkl'))
 
 
 train_idx = dataset.getTrainIndex()
