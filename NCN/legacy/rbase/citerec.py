@@ -7,7 +7,7 @@
 import atexit
 import h5py
 import numpy as np
-import cPickle
+import pickle
 from os.path import isfile
 
 
@@ -117,7 +117,7 @@ class HDF5Dataset(object):
     def addPickle(self, group, key, obj):
         group, key = self._checkKeys(group, key)
         self._checkDataset(group)
-        self._file[group].attrs[key] = np.void(b"%s" % cPickle.dumps(obj, cPickle.HIGHEST_PROTOCOL))
+        self._file[group].attrs[key] = np.void(b"%s" % pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
 
     def addArray(self, key, data):
         key = self._checkKeyStr(key)
@@ -137,7 +137,7 @@ class HDF5Dataset(object):
 
     def getPickle(self, group, key):
         group, key = self._checkKeys(group, key)
-        return cPickle.loads(self._file[group].attrs[key].tostring())
+        return pickle.loads(self._file[group].attrs[key].tostring())
 
     def getArray(self, key):
         key = self._checkKeyStr(key)
@@ -232,10 +232,10 @@ class CitationContextDataset(HDF5Dataset):
     def getValidIndex(self):
         return self.getArray(self._KEY_VALID_INDEX)
 
-    def addYearClusters(data):
+    def addYearClusters(self, data):
         self.addPickle("years", 0, data)
 
-    def getYearClusters():
+    def getYearClusters(self):
         return self.getPickle('years', 0)
 
     # ---------------------------
