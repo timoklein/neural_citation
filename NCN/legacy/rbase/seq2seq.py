@@ -440,11 +440,11 @@ class DeepCNNtoRNN(BaseRNN):
 
         if self._use_authors:
             # Concatenate the author layer
-            print "Author Outputs: ", self._auth_outputs
-            print "Encoder Outputs: ", self._enc_outputs
+            print("Author Outputs: ", self._auth_outputs)
+            print("Encoder Outputs: ", self._enc_outputs)
             self._enc_outputs = tf.concat(1,
                                           [self._enc_outputs, self._auth_outputs])
-            print "Concatenated: ", self._enc_outputs
+            print("Concatenated: ", self._enc_outputs)
 
         ##################################
         # Decoder

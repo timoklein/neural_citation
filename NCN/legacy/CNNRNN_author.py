@@ -5,7 +5,6 @@
 @created:  2016-11-14
 @summary:
 '''
-from __future__ import unicode_literals
 import argparse
 parser = argparse.ArgumentParser()
 
@@ -32,7 +31,8 @@ import tensorflow as tf
 import numpy as np
 
 from rbase.citerec import PAD_TOKEN, GO_TOKEN, END_TOKEN, CitationContextDataset
-import rbase.seq2seq import DeepCNNtoRNN
+import rbase.seq2seq
+import DeepCNNtoRNN
 
 DOC_COUNT = 4258383
 
@@ -164,8 +164,8 @@ class Config(object):
             self.__dict__.update(d)
 
     def _get_dict(self):
-        return {key: self.__getattribute__(key) if isinstance(self.__getattribute__(key), (int, long, float))
-                else unicode(self.__getattribute__(key))  for key in self.fields}
+        return {key: self.__getattribute__(key) if isinstance(self.__getattribute__(key), (int,float))
+                else str(self.__getattribute__(key))  for key in self.fields}
 
     def __repr__(self):
         return json.dumps(self._get_dict(), sort_keys=True, indent=2)
@@ -253,7 +253,7 @@ class BucketingQueue(object):
             encoder_input = encoder_input[::-1]
 
         # Batch decoder inputs are re-indexed decoder_inputs, we create weights.
-        for length_idx in xrange(decoder_size):
+        for length_idx in range(decoder_size):
             # We set weight to 0 if the corresponding target is a PAD symbol.
             # The corresponding target is decoder_input shifted by 1 forward.
             if length_idx < decoder_size - 1:
@@ -325,7 +325,7 @@ def create_exp_directory(cwd=''):
             created = True
             break
     if not created:
-        print 'Could not create directory for experiments'
+        print("Could not create directory for experiments")
         exit(-1)
     return path + '/'
 
@@ -493,7 +493,7 @@ try:
             tf.logging.info('Decaying Learning Rate by {}'.format(decay_rate))
             models[0].decay_learning_rate(sess, decay_rate)
 
-        for _i in xrange(batch_count):
+        for _i in range(batch_count):
             # Never got the chance to integrate it
             bucket_id, (encoder_inputs, decoder_inputs, weights, targets, decoder_len, enc_auth, dec_auth) = sess.run(buckets.bucket)
 
@@ -536,7 +536,7 @@ try:
                   os.path.join(config.save_directory, 'seq2seq_epoch%s.chkpt' % epoch))
 
 except KeyboardInterrupt:
-    print 'Keyboard Interrupt'
+    print("Keyboard Interrupt")
 
-print 'Done...'
+print("Done...")
 sv.coord.request_stop()

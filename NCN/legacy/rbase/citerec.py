@@ -77,8 +77,8 @@ class HDF5Dataset(object):
         Keys for h5py must be string/unicode type.
         This function checks it and converts if necessary.
         """
-        if not (isinstance(key, str) or isinstance(key, unicode)):
-            return unicode(key)
+        if not (isinstance(key, str) or isinstance(key, str)):
+            return str(key)
         return key
 
     def _checkKeys(self, key1, key2):
