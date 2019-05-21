@@ -9,6 +9,9 @@ An implementation of a deep learning model for citation recommendation.
 5. Extend model to work with other dataset [unarxiv? MAG?] 
 
 ## Questions
+* Rework initial paper draft  
+    Would need to set up SQL database and preprocess data from scratch for reimplementation
+    What to do?!
 * Which format for the written paper?
 * Which language to use?
 * Can we submit later due to Timo holiday in august?
