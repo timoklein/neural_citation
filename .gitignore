@@ -1,6 +1,7 @@
 
 # OWN IGNORED FILES & FOLDERS
 .vscode/
+0*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

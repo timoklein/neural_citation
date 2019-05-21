@@ -354,7 +354,7 @@ if restore:
     config = Config(save_directory=restore_directory)
     config.load()
 else:
-    config = Config(save_directory=create_exp_directory('/home/tebesu/result/citerec/'))
+    config = Config(save_directory=create_exp_directory('/home/timo/Documents/KIT/4SEM/1Seminar_KD/neural_citation/'))
 
 # Setup Logging
 LOGGING_CONFIG = dict(
@@ -397,7 +397,10 @@ dictConfig(LOGGING_CONFIG)
 if restore:
     tf.logging.info('Resuming from directory: %s' % restore_directory)
 
-df = pickle.load(open('title_context_df.pkl'))
+
+with open("/home/timo/DataSets/NCN_data/title_context_df.pkl", "rb") as pickle_file:
+    df = pickle.load(pickle_file)
+# df = pickle.load()
 
 
 train_idx = dataset.getTrainIndex()

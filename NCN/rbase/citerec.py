@@ -137,6 +137,7 @@ class HDF5Dataset(object):
 
     def getPickle(self, group, key):
         group, key = self._checkKeys(group, key)
+        print(self._file[group].attrs[key])
         return pickle.loads(self._file[group].attrs[key].tostring())
 
     def getArray(self, key):
