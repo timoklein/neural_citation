@@ -31,8 +31,7 @@ import tensorflow as tf
 import numpy as np
 
 from rbase.citerec import PAD_TOKEN, GO_TOKEN, END_TOKEN, CitationContextDataset
-import rbase.seq2seq
-import DeepCNNtoRNN
+from rbase.seq2seq import DeepCNNtoRNN
 
 DOC_COUNT = 4258383
 

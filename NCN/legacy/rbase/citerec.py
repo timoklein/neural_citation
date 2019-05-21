@@ -273,4 +273,7 @@ class CitationContextDataset(HDF5Dataset):
         return self.getPickle('papers', 'clusters')
 
 if __name__ == '__main__':
-    pass
+    path_to_data = r"/home/timo/DataSets/NCN_data/seq_data.h5py"
+    path_to_pkl = r"/home/timo/DataSets/NCN_data/title_context_df.pkl"
+    data = CitationContextDataset(path_to_data)
+    print(data.getDecoderVocab())
