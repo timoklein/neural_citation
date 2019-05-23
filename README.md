@@ -19,3 +19,17 @@ An implementation of a deep learning model for citation recommendation.
     How important is explaining the model? (eg.g. start from scratch: What is a CNN...)  
     How important is explaining our approach and what we want to do? (e.g. What we do to improve the model)  
     How important is explaining the parameters? (e.g. embedding dimensions etc.)
+
+## Presentation
+### Purpose
+Show your research problem + how you target it
+
+
+### Outline
+* What is the research question?
+* What is your approach? Why did you choose this approach? 
+* Are there existing approaches? How do they differ from your approach? In what way is your approach better than others?
+* What data set do you use and why?
+* What is your schedule until the end of the semester?
+* What conceptual and technical challenges have you faced or will you face?
+* Do not: Motivate your work extensively from scratch
