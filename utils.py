@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 from ast import literal_eval
 from typing import Union
+import spacy
 
 PathOrStr = Union[Path, str]
 
@@ -25,7 +26,8 @@ PathOrStr = Union[Path, str]
     For data JSON:
         1. Tokenize
         2. Lemmatize
-        3. Prune vocabulary?
+        3. Remove formulas
+        4. Prune vocabulary?
 
 3. Step of preprocessing:
     Apply GloVe embeddings and store results as torch tensors of the form 1xembed_dimxseq_len
