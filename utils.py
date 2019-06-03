@@ -52,7 +52,7 @@ def process_refs(refs: str, delimiter: str = "\n") -> List[str]:
     return refs.split(delimiter)
 
 
-# TODO: FIX ref splitting at \n to GC and DBLP
+# TODO: FIX ref splitting at \n to GC and DBLP (have to replace \n beforehand) -> use re.split w. multiple delimiters
 def generate_json_text(contexts: Collection[str], refs: Collection[str], 
                        meta: Dict[str, str], textpath: Path) -> DataFrame:
     samples = []
