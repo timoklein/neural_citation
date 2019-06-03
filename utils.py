@@ -59,7 +59,6 @@ def generate_json_text(contexts: Collection[str], refs: Collection[str],
     for sentence in contexts:
         hits = re.findall(CITATION_PATTERNS, sentence)
         for hit in hits:
-            test = hit[1:-1]
             for ref in refs:
                 if re.search(hit[1:-1], ref):
                     author_idx = ref.find(';') + 1
@@ -71,11 +70,14 @@ def generate_json_text(contexts: Collection[str], refs: Collection[str],
                         authors = [author.strip() for author in authors if len(author) > 3]
                     except ValueError:
                         logging.info("Erroneous reference file found: " + textpath.stem)
-                    sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
-                            "title_citing": meta["title"],
-                            "authors_citing": ','.join(meta["authors"]),
-                            "title_cited": title,
-                            "authors_cited": ','.join(authors)}
+                    try:
+                        sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
+                                "title_citing": meta["title"],
+                                "authors_citing": ','.join(meta["authors"]),
+                                "title_cited": title,
+                                "authors_cited": ','.join(authors)}
+                    except UnboundLocalError:
+                        continue
                     samples.append(pd.DataFrame(sample, index=[0]))
     return samples
                     
@@ -95,12 +97,17 @@ def prepare_data(path: PathOrStr) -> None:
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
 
-        with open(textpath, 'r') as f:
-            text = f.read()
-        with open(metapath, 'r') as f:
-            meta = f.read()
-        with open(refpath, 'r') as f:
-            refs = f.read()
+        # open files to extract information, skip if a file is missing
+        try:
+            with open(textpath, 'r') as f:
+                text = f.read()
+            with open(metapath, 'r') as f:
+                meta = f.read()
+            with open(refpath, 'r') as f:
+                refs = f.read()
+        except FileNotFoundError:
+            logging.info("Could not locate file instance")
+            continue
         
         # throw away incomplete data instances before further processing rest
         if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
