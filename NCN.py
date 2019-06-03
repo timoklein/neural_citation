@@ -2,9 +2,6 @@ import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
-from torchvision import transforms as T
-
-from typing import Collection
 
 
 class TDNN(nn.Module):
@@ -40,7 +37,7 @@ class AttentionDecoder(nn.Module):
 
 class NCN(nn.Module):
     def __init__(self, config, max_encoder_length, max_decoder_length, authors: bool = False, embed_size: int = 300):
-        super().__init__(config)
+        super().__init__()
         self._use_authors = authors
 
 
