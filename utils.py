@@ -1,10 +1,13 @@
 from pathlib import Path
 import re
 from ast import literal_eval
-from typing import Union, Collection
+from typing import Union, Collection, List, Dict
 import spacy
+import logging
 
+logging.basicConfig(level=logging.INFO, style='$')
 PathOrStr = Union[Path, str]
+CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 
 """
 1. Step of preprocessing:
@@ -31,17 +34,42 @@ PathOrStr = Union[Path, str]
 4. Get in consumption format for NCN
 """
 
-def process_text(text: str, delimiter: str = "\n============\n") -> Collection:
-    text = re.sub("<formula>", '')
+def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
+    text = re.sub("<formula>", '', text)
     sentences = text.split(delimiter)
     contexts = []
     for sentence in sentences:
-        if re.search("<DBLP:|<GC:", sentence):
+        if re.search(CITATION_PATTERNS, sentence):
             contexts.append(sentence)
+    return contexts
 
 
-def process_refs(refs: str, delimiter: str = "\n") -> Collection:
+def process_refs(refs: str, delimiter: str = "\n") -> List[str]:
     return refs.split(delimiter)
+
+
+def generate_json_text(contexts: Collection[str], refs: Collection[str], meta: Dict[str, str]) -> None:
+    samples = []
+    for sentence in contexts:
+        hits = re.findall(CITATION_PATTERNS, sentence)
+        for hit in hits:
+            test = hit[1:-1]
+            for ref in refs:
+                if re.search(hit[1:-1], ref):
+                    author_idx = ref.find(';') + 1
+                    data = ref[author_idx:]
+                    authors, title, *_ = data.split('.')
+                    authors = re.sub(r"\band\b", ',', authors)
+                    authors = authors.split(',')
+                    authors = [author.strip() for author in authors if len(author) > 3]
+                    sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
+                            "title_citing": meta_dict["title"],
+                            "authors_citing": meta_dict["authors"],
+                            "title_cited": title,
+                            "authors_cited": authors}
+                    samples.append(sample)
+    return samples
+                    
 
 
 def prepare_data(path: PathOrStr) -> None:
@@ -64,8 +92,10 @@ def prepare_data(path: PathOrStr) -> None:
         
         # throw away incomplete data instances before further processing rest
         if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
+            logging.info("Incomplete Data at file " + textpath.stem)
             return
         else:
+            # preprocess string data
             meta = literal_eval(meta)
             text = process_text(text)
             refs = process_refs(refs)
