@@ -1,9 +1,13 @@
-from pathlib import Path
 import re
-from ast import literal_eval
-from typing import Union, Collection, List, Dict
+import pandas as pd
 import spacy
 import logging
+import json
+from pandas import DataFrame
+from pathlib import Path
+from ast import literal_eval
+from typing import Union, Collection, List, Dict
+
 
 logging.basicConfig(level=logging.INFO, style='$')
 PathOrStr = Union[Path, str]
@@ -48,7 +52,9 @@ def process_refs(refs: str, delimiter: str = "\n") -> List[str]:
     return refs.split(delimiter)
 
 
-def generate_json_text(contexts: Collection[str], refs: Collection[str], meta: Dict[str, str]) -> None:
+# TODO: FIX ref splitting at \n to GC and DBLP
+def generate_json_text(contexts: Collection[str], refs: Collection[str], 
+                       meta: Dict[str, str], textpath: Path) -> DataFrame:
     samples = []
     for sentence in contexts:
         hits = re.findall(CITATION_PATTERNS, sentence)
@@ -58,16 +64,19 @@ def generate_json_text(contexts: Collection[str], refs: Collection[str], meta: D
                 if re.search(hit[1:-1], ref):
                     author_idx = ref.find(';') + 1
                     data = ref[author_idx:]
-                    authors, title, *_ = data.split('.')
-                    authors = re.sub(r"\band\b", ',', authors)
-                    authors = authors.split(',')
-                    authors = [author.strip() for author in authors if len(author) > 3]
+                    try:
+                        authors, title, *_ = data.split('.')
+                        authors = re.sub(r"\band\b", ',', authors)
+                        authors = authors.split(',')
+                        authors = [author.strip() for author in authors if len(author) > 3]
+                    except ValueError:
+                        logging.info("Erroneous reference file found: " + textpath.stem)
                     sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
-                            "title_citing": meta_dict["title"],
-                            "authors_citing": meta_dict["authors"],
+                            "title_citing": meta["title"],
+                            "authors_citing": ','.join(meta["authors"]),
                             "title_cited": title,
-                            "authors_cited": authors}
-                    samples.append(sample)
+                            "authors_cited": ','.join(authors)}
+                    samples.append(pd.DataFrame(sample, index=[0]))
     return samples
                     
 
@@ -79,6 +88,9 @@ def prepare_data(path: PathOrStr) -> None:
     * __path__(PathOrStr):         Path or string to files
     """
     path = Path(path)
+    save_dir =Path("/home/timo/DataSets/KD_arxiv_CS")
+    data = []
+
     for textpath in path.glob("*.txt"):
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
@@ -93,9 +105,25 @@ def prepare_data(path: PathOrStr) -> None:
         # throw away incomplete data instances before further processing rest
         if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
             logging.info("Incomplete Data at file " + textpath.stem)
-            return
         else:
             # preprocess string data
-            meta = literal_eval(meta)
+            meta = json.loads(meta)
             text = process_text(text)
             refs = process_refs(refs)
+            data.append(generate_json_text(text, refs, meta, textpath))
+    
+    # prepare data for storage and save
+    dataset = pd.concat(data, axis=0)
+    dataset.reset_index(inplace=True)
+    dataset.drop("index", axis=1, inplace=True)
+    dataset.to_pickle(save_dir/"arxiv_data", compression=None)
+
+
+
+def main():
+    path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv"
+    prepare_data(path_to_data)
+
+
+if __name__ == '__main__':
+    main()
