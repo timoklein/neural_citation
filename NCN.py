@@ -28,7 +28,7 @@ class TDNN(nn.Module):
 
     def forward(self, x):
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
-        x.unsqueeze_(1)
+        x = x.unsqueeze(1)
 
 
         # output shape: batch_size, num_filters, 1, f(seq length)
