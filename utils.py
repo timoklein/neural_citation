@@ -96,9 +96,15 @@ def clean_incomplete_data(path: PathOrStr) -> None:
         if ( not metapath.exists() ) or ( not refpath.exists() ):
             incomplete_paths += 1
             logging.debug(f"Found incomplete file: {textpath.stem}")
-            # textpath.unlink()
-            # metapath.unlink()
-            # refpath.unlink()
+            textpath.unlink()
+            try:
+                metapath.unlink()
+            except FileNotFoundError:
+                pass
+            try:
+                refpath.unlink()
+            except FileNotFoundError:
+                pass
         else:
             with open(textpath, 'r') as f:
                 text = f.read()
@@ -110,9 +116,9 @@ def clean_incomplete_data(path: PathOrStr) -> None:
             if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
                 empty_files += 1
                 logging.debug(f"Found empty file: {textpath.stem}")
-                # textpath.unlink()
-                # metapath.unlink()
-                # refpath.unlink()
+                textpath.unlink()
+                metapath.unlink()
+                refpath.unlink()
     
     message = (f"Incomplete paths(not all files present): {incomplete_paths} out of {no_files}"
                 f"\nAt least one empty file: {empty_files} out of {no_files}")
