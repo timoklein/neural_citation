@@ -9,7 +9,7 @@ from ast import literal_eval
 from typing import Union, Collection, List, Dict
 
 
-logging.basicConfig(level=logging.INFO, style='$')
+logging.basicConfig(level=logging.DEBUG, style='$')
 PathOrStr = Union[Path, str]
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 
@@ -80,7 +80,45 @@ def generate_json_text(contexts: Collection[str], refs: Collection[str],
                         continue
                     samples.append(pd.DataFrame(sample, index=[0]))
     return samples
-                    
+
+
+def clean_incomplete_data(path: PathOrStr) -> None:
+    path = Path(path)
+
+    incomplete_paths = 0
+    empty_files = 0
+    no_files = len(list(path.glob("*.txt")))
+
+    for textpath in path.glob("*.txt"):
+        metapath = textpath.with_suffix(".meta")
+        refpath = textpath.with_suffix(".refs")
+
+        if ( not metapath.exists() ) or ( not refpath.exists() ):
+            incomplete_paths += 1
+            logging.debug(f"Found incomplete file: {textpath.stem}")
+            # textpath.unlink()
+            # metapath.unlink()
+            # refpath.unlink()
+        else:
+            with open(textpath, 'r') as f:
+                text = f.read()
+            with open(metapath, 'r') as f:
+                meta = f.read()
+            with open(refpath, 'r') as f:
+                refs = f.read()
+
+            if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
+                empty_files += 1
+                logging.debug(f"Found empty file: {textpath.stem}")
+                # textpath.unlink()
+                # metapath.unlink()
+                # refpath.unlink()
+    
+    message = (f"Incomplete paths(not all files present): {incomplete_paths} out of {no_files}"
+                f"\nAt least one empty file: {empty_files} out of {no_files}")
+    logging.debug(message)
+
+
 
 
 def prepare_data(path: PathOrStr) -> None:
@@ -97,27 +135,18 @@ def prepare_data(path: PathOrStr) -> None:
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
 
-        # open files to extract information, skip if a file is missing
-        try:
-            with open(textpath, 'r') as f:
-                text = f.read()
-            with open(metapath, 'r') as f:
-                meta = f.read()
-            with open(refpath, 'r') as f:
-                refs = f.read()
-        except FileNotFoundError:
-            logging.info("Could not locate file instance")
-            continue
+        with open(textpath, 'r') as f:
+            text = f.read()
+        with open(metapath, 'r') as f:
+            meta = f.read()
+        with open(refpath, 'r') as f:
+            refs = f.read()
         
-        # throw away incomplete data instances before further processing rest
-        if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
-            logging.info("Incomplete Data at file " + textpath.stem)
-        else:
-            # preprocess string data
-            meta = json.loads(meta)
-            text = process_text(text)
-            refs = process_refs(refs)
-            data.append(generate_json_text(text, refs, meta, textpath))
+        # preprocess string data
+        meta = json.loads(meta)
+        text = process_text(text)
+        refs = process_refs(refs)
+        data.append(generate_json_text(text, refs, meta, textpath))
     
     # prepare data for storage and save
     dataset = pd.concat(data, axis=0)
@@ -129,8 +158,7 @@ def prepare_data(path: PathOrStr) -> None:
 
 def main():
     path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv"
-    prepare_data(path_to_data)
-
+    clean_incomplete_data(path_to_data)
 
 if __name__ == '__main__':
     main()
