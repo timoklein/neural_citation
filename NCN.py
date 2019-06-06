@@ -22,11 +22,15 @@ class TDNN(nn.Module):
 
     def __init__(self, filter_size: int, embed_size: int, num_filters: int = 64):
         super().__init__()
-        # input shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
+        # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size))
         self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
+        # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
+        x.unsqueeze_(1)
+
+
         # output shape: batch_size, num_filters, 1, f(seq length)
         x = F.relu(self.bn(self.conv(x)))
         pool_size = x.shape[-1]
@@ -103,7 +107,7 @@ class NCN(nn.Module):
         # decoder
 
     def forward(self, x):
-        # encode
+        # encoder
         # output: List of tensors w. shape: batch size, 1, num_filters, 1
         x = [encoder(x) for encoder in self.convs]
         # output shape: batch_size, list_length, num_filters
@@ -112,9 +116,10 @@ class NCN(nn.Module):
         x = x.view(self._bs, -1)
 
         # apply nonlinear mapping
-        x = F.tanh(self.fc(x))
+        x = torch.tanh(self.fc(x))
         x = x.view(-1, len(self._filter_list), self._num_filters)
 
+        #------------------------------------------------------------------
         # decode
 
-        return None
+        return x
