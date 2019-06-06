@@ -27,9 +27,14 @@ class TDNN(nn.Module):
         self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
+        # output shape: batch_size, num_filters, 1, f(seq length)
         x = F.relu(self.bn(self.conv(x)))
         pool_size = x.shape[-1]
+
+        # output shape: batch_size, num_filters, 1, 1
         x = F.max_pool2d(x, kernel_size=pool_size)
+
+        # output shape: batch_size, 1, num_filters, 1
         return torch.einsum("nchw -> nhcw", x)
 
 
@@ -99,10 +104,13 @@ class NCN(nn.Module):
 
     def forward(self, x):
         # encode
+        # output: List of tensors w. shape: batch size, 1, num_filters, 1
         x = [encoder(x) for encoder in self.convs]
+        # output shape: batch_size, list_length, num_filters
         x = torch.cat(x, dim=1).squeeze()
+        # output shape: batch_size, list_length*num_filters
         x = x.view(self._bs, -1)
-        
+
         # apply nonlinear mapping
         x = F.tanh(self.fc(x))
         x = x.view(-1, len(self._filter_list), self._num_filters)
