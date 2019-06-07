@@ -8,16 +8,22 @@ from collections import OrderedDict
 Filters = List[int]
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+MAX_LENGTH = 20
 
 class TDNN(nn.Module):
     """
-    Single TDNN Block for the neural citation network.
-    Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.
-    Input is a tensor of shape: (batch_size, 1, embedding dimension, sequence length)
-    Output is a tensor of shape: (batch_size, num_filters)
-    * __filter size__(int):         filter length for the convolutional operation
-    * __embed_size__(int):          Dimension of the input word embeddings
-    * __num_filters__(int=64):      Number of filters to be applied in the convolution
+    Single TDNN Block for the neural citation network.  
+    Implementation is based on:  
+    https://ronan.collobert.com/pub/matos/2008_nlp_icml.pdf.  
+    Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.   
+    **Parameters**:   
+    - *filter_size* (int): filter length for the convolutional operation  
+    - *embed_size* (int): Dimension of the input word embeddings  
+    - *num_filters* (int=64): Number of convolutional filters  
+    **Input**:  
+    - Tensor of shape: [N: batch size, D: embedding dimensions, L: sequence length].  
+    **Output**:  
+    - Tensor of shape: [batch_size, num_filters]. 
     """
 
     def __init__(self, filter_size: int, embed_size: int, num_filters: int = 64):
@@ -81,6 +87,15 @@ class AttnDecoderRNN(nn.Module):
 
 
 class NCN(nn.Module):
+    """
+    PyTorch implementation of the neural citation network by Ebesu & Fang.  
+    The original paper can be found here:  
+    http://www.cse.scu.edu/~yfang/NCN.pdf.   
+    The author's tensorflow code is on github:  
+    https://github.com/tebesu/NeuralCitationNetwork.  
+
+
+    """
     def __init__(self, filters: Filters,
                        num_filters: int = 64,
                        authors: bool = False, 

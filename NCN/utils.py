@@ -10,8 +10,12 @@ from typing import Union, Collection, List, Dict
 
 
 logging.basicConfig(level=logging.DEBUG, style='$')
+
 PathOrStr = Union[Path, str]
+"""Custom type for Paths or pathlike objects."""
+
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
+"""Regex patterns for matching citations in document sentences."""
 
 """
 1. Step of preprocessing:
@@ -39,6 +43,16 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """
 
 def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
+    """
+    Preprocessing function for preprocessing arxiv CS paper text.     
+    **Parameters**:   
+    - *text* (str): opened file string object.  
+    - *delimiter* (str = "\n============\n"): token separating text sentences.      
+    **Input**:  
+    - Any string object.   
+    **Output**:  
+    - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
+    """
     text = re.sub("<formula>", '', text)
     sentences = text.split(delimiter)
     contexts = []
@@ -130,7 +144,7 @@ def clean_incomplete_data(path: PathOrStr) -> None:
 def prepare_data(path: PathOrStr) -> None:
     """
     Prepare the arxiv CS dataset and save in JSON format.
-    INPUTS:
+    INPUTS:  
     * __path__(PathOrStr):         Path or string to files
     """
     path = Path(path)
