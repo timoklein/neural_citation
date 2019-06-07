@@ -3,7 +3,6 @@ from torch import nn
 from torch import optim
 import torch.nn.functional as F
 from typing import List
-from collections import OrderedDict
 
 Filters = List[int]
 
