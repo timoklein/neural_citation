@@ -60,14 +60,20 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
             s = re.sub("GC|DBLP", '', hit)
             for ref in refs:
                 if re.search(s[1:-1], ref):
-                    # extract authors and preprocess
+                    # find and preprocess authors
                     authors = re.findall(";(.*?)\`\`", ref)
+                    authors = ''.join(authors)
                     authors = re.sub(r"\band\b", ',', authors)
-                    authors = authors.split(',')
-                    authors = [author.strip() for author in authors if len(author) > 3]
+                    authors = re.sub(r"-", '', authors)
+                    authors = authors.strip(',  ')
+
+                    # skip the sample if there is no author information
+                    if len(authors) == 0:
+                        continue
                     
-                    # extract titles and preprocess
+                    # find and preprocess titles
                     title = re.findall('\`\`(.*?)\'\'', ref)
+                    title = ''.join(title).strip(',')
                     
                     # generate sample in correct format
                     sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
