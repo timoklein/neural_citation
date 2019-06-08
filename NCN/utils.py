@@ -21,7 +21,7 @@ def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper text.     
     **Parameters**:   
-    - *text* (str): opened file string object.  
+    - *text* (str): .txt file string object containing the text of a paper.  
     - *delimiter* (str = "\\n============\\n"): token separating text sentences.        
     **Output**:  
     - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
@@ -35,17 +35,17 @@ def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
     return contexts
 
 
-def process_refs(refs: str, delimiter: str = "\n") -> List[str]:
+def process_refs(refs: str, delimiter_patterns: str = "GC|DBLP") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper references.     
     **Parameters**:   
-    - *refs* (str): opened file string object.  
-    - *delimiter* (str = "\\n"): token separating text sentences.     
+    - *refs* (str): reference file string.  
+    - *delimiter_patterns* (str = "GC|DBLP"): regex patterns used to split the inidividual references.     
     **Output**:  
     - List citation contexts split at *delimiter*.
     """
     refs = re.sub("\n", '', refs)
-    return refs.split(delimiter)
+    return re.split(delimiter_patterns, refs)
 
 
 # TODO: FIX ref splitting at \n to GC and DBLP (have to replace \n beforehand) -> use re.split w. multiple delimiters
@@ -53,22 +53,28 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
                        meta: Dict[str, str], textpath: Path) -> DataFrame:
     samples = []
     for sentence in contexts:
+        # return a list of all citations in a sentence
         hits = re.findall(CITATION_PATTERNS, sentence)
         for hit in hits:
+            # remove the identifiers as we use them to split .refs file
+            s = re.sub("GC|DBLP", '', hit)
             for ref in refs:
-                if re.search(hit[1:-1], ref):
-                    author_idx = ref.find(';') + 1
-                    data = ref[author_idx:]
-                    authors, title, *_ = data.split('.')
+                if re.search(s[1:-1], ref):
+                    # extract authors and preprocess
+                    authors = re.findall(";(.*?)\`\`", ref)
                     authors = re.sub(r"\band\b", ',', authors)
                     authors = authors.split(',')
                     authors = [author.strip() for author in authors if len(author) > 3]
-                    logging.info("Erroneous reference file found: " + textpath.stem)
+                    
+                    # extract titles and preprocess
+                    title = re.findall('\`\`(.*?)\'\'', ref)
+                    
+                    # generate sample in correct format
                     sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
                             "title_citing": meta["title"],
                             "authors_citing": ','.join(meta["authors"]),
                             "title_cited": title,
-                            "authors_cited": ','.join(authors)}
+                            "authors_cited": authors}
                     samples.append(pd.DataFrame(sample, index=[0]))
     return samples
 
@@ -128,7 +134,7 @@ def prepare_data(path: PathOrStr) -> None:
     Extracts citation contexts from each (.txt, .meta, .refs) tupel in the given location 
     and stores them in a DataFrame.  
     Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
-    The resulting DataFrame is saved as Python pickle object in the 
+    The resulting DataFrame is saved as Python pickle object in the parent directory.  
     **Parameters**:   
     - *path* (PathOrStr): Path object or string to the dataset.
     """

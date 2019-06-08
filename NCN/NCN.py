@@ -7,6 +7,8 @@ from typing import List
 Filters = List[int]
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+"""Set the device to GPU if available."""
+
 MAX_LENGTH = 20
 
 class TDNN(nn.Module):
@@ -32,6 +34,9 @@ class TDNN(nn.Module):
         self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
+        """
+        Forward pass.
+        """
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
         x = x.unsqueeze(1)
 
