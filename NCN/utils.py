@@ -5,7 +5,6 @@ import logging
 import json
 from pandas import DataFrame
 from pathlib import Path
-from ast import literal_eval
 from typing import Union, Collection, List, Dict
 
 
@@ -17,39 +16,13 @@ PathOrStr = Union[Path, str]
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
 
-"""
-1. Step of preprocessing:
-    For each context with all available data create
-        Dictionary/JSON of the form:
-        {   "context": Tensor w. shapes 300xlen(context),
-            "title_citing": Tensor w. shapes 300xlen(title_citing),
-            "authors_citing": Vector with length author_vocab,     
-            "title_cited": "...",
-            "authors_cited": "...",
-            ]
-        }
 
-2. Step of preprocessing:
-    For data JSON:
-        1. Tokenize
-        2. Lemmatize
-        3. Remove formulas
-        4. Prune vocabulary?
-
-3. Step of preprocessing:
-    Apply GloVe embeddings and store results as torch tensors of the form 1xembed_dimxseq_len
-
-4. Get in consumption format for NCN
-"""
-
-def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
+def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper text.     
     **Parameters**:   
     - *text* (str): opened file string object.  
-    - *delimiter* (str = "\n============\n"): token separating text sentences.      
-    **Input**:  
-    - Any string object.   
+    - *delimiter* (str = "\\n============\\n"): token separating text sentences.        
     **Output**:  
     - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
     """
@@ -63,11 +36,20 @@ def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
 
 
 def process_refs(refs: str, delimiter: str = "\n") -> List[str]:
+    """
+    Preprocessing function for preprocessing arxiv CS paper references.     
+    **Parameters**:   
+    - *refs* (str): opened file string object.  
+    - *delimiter* (str = "\\n"): token separating text sentences.     
+    **Output**:  
+    - List citation contexts split at *delimiter*.
+    """
+    refs = re.sub("\n", '', refs)
     return refs.split(delimiter)
 
 
 # TODO: FIX ref splitting at \n to GC and DBLP (have to replace \n beforehand) -> use re.split w. multiple delimiters
-def generate_json_text(contexts: Collection[str], refs: Collection[str], 
+def generate_context_samples(contexts: Collection[str], refs: Collection[str], 
                        meta: Dict[str, str], textpath: Path) -> DataFrame:
     samples = []
     for sentence in contexts:
@@ -77,26 +59,28 @@ def generate_json_text(contexts: Collection[str], refs: Collection[str],
                 if re.search(hit[1:-1], ref):
                     author_idx = ref.find(';') + 1
                     data = ref[author_idx:]
-                    try:
-                        authors, title, *_ = data.split('.')
-                        authors = re.sub(r"\band\b", ',', authors)
-                        authors = authors.split(',')
-                        authors = [author.strip() for author in authors if len(author) > 3]
-                    except ValueError:
-                        logging.info("Erroneous reference file found: " + textpath.stem)
-                    try:
-                        sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
-                                "title_citing": meta["title"],
-                                "authors_citing": ','.join(meta["authors"]),
-                                "title_cited": title,
-                                "authors_cited": ','.join(authors)}
-                    except UnboundLocalError:
-                        continue
+                    authors, title, *_ = data.split('.')
+                    authors = re.sub(r"\band\b", ',', authors)
+                    authors = authors.split(',')
+                    authors = [author.strip() for author in authors if len(author) > 3]
+                    logging.info("Erroneous reference file found: " + textpath.stem)
+                    sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
+                            "title_citing": meta["title"],
+                            "authors_citing": ','.join(meta["authors"]),
+                            "title_cited": title,
+                            "authors_cited": ','.join(authors)}
                     samples.append(pd.DataFrame(sample, index=[0]))
     return samples
 
 
 def clean_incomplete_data(path: PathOrStr) -> None:
+    """
+    Cleaning function for the arxiv CS dataset. Checks all .txt files in the target folder and looks
+    for matching .ref and .meta files. If a file is missing, all others are deleted.  
+    If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.     
+    **Parameters**:   
+    - *path* (PathOrStr): Path object or string to the dataset.      
+    """
     path = Path(path)
 
     incomplete_paths = 0
@@ -139,16 +123,17 @@ def clean_incomplete_data(path: PathOrStr) -> None:
     logging.debug(message)
 
 
-
-
 def prepare_data(path: PathOrStr) -> None:
-    """
-    Prepare the arxiv CS dataset and save in JSON format.
-    INPUTS:  
-    * __path__(PathOrStr):         Path or string to files
+    """ 
+    Extracts citation contexts from each (.txt, .meta, .refs) tupel in the given location 
+    and stores them in a DataFrame.  
+    Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
+    The resulting DataFrame is saved as Python pickle object in the 
+    **Parameters**:   
+    - *path* (PathOrStr): Path object or string to the dataset.
     """
     path = Path(path)
-    save_dir =Path("/home/timo/DataSets/KD_arxiv_CS")
+    save_dir = path.parent
     data = []
 
     for textpath in path.glob("*.txt"):
@@ -166,19 +151,19 @@ def prepare_data(path: PathOrStr) -> None:
         meta = json.loads(meta)
         text = process_text(text)
         refs = process_refs(refs)
-        data.append(generate_json_text(text, refs, meta, textpath))
+        data.append(generate_context_samples(text, refs, meta, textpath))
     
     # prepare data for storage and save
     dataset = pd.concat(data, axis=0)
     dataset.reset_index(inplace=True)
     dataset.drop("index", axis=1, inplace=True)
-    dataset.to_pickle(save_dir/"arxiv_data", compression=None)
-
+    dataset.to_pickle(save_dir/"arxiv_data.pkl", compression=None)
 
 
 def main():
-    path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv"
-    clean_incomplete_data(path_to_data)
+    path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
+    # clean_incomplete_data(path_to_data)
+
 
 if __name__ == '__main__':
     main()
