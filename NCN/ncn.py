@@ -4,6 +4,9 @@ import torch.nn.functional as F
 from typing import List
 
 Filters = List[int]
+"""Custom data type representing a list of filter lengths."""
+
+MAX_LENGTH = 20
 
 class TDNN(nn.Module):
     """
@@ -82,7 +85,7 @@ class AttnDecoderRNN(nn.Module):
     
     - Output 1: [shapes]  
     """
-    def __init__(self, hidden_size: int, output_size: int, dropout_p=0.2, max_length: int = 20):
+    def __init__(self, hidden_size: int, output_size: int, dropout_p=0.2, max_length: int = MAX_LENGTH):
         super().__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -183,7 +186,7 @@ class NCN(nn.Module):
                                   for f in self.author_filter_list]
             self.fc_authors_cited = nn.Linear(self._num_author_filters_total, self._num_author_filters_total)
 
-        # decoder
+        # TODO: Instantiate AttentionDecoder (Does this have to be different depending on authors?)
 
     def forward(self, context, title, *args):
         # context encoder
@@ -215,6 +218,8 @@ class NCN(nn.Module):
             authors_cited = authors_cited.view(self._bs, -1)
             authors_cited = torch.tanh(self.fc_authors_cited(authors_cited))
             authors_cited = authors_cited.view(-1, len(self.author_filter_list), self.num_filters)
+
+            # TODO: Concatenate all inputs correctly
             
 
 
