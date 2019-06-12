@@ -145,7 +145,8 @@ class NCN(nn.Module):
     
     - Output 1: [shapes] 
     """
-    def __init__(self, filters: Filters,
+    def __init__(self, context_filters: Filters,
+                       author_filters = Filters,
                        num_filters: int = 64,
                        authors: bool = False, 
                        w_embed_size: int = 300,
@@ -155,40 +156,69 @@ class NCN(nn.Module):
         super().__init__()
 
         self.use_authors = authors
-        self.filter_list = filters
-        self.num_filters = num_filters
+        self.context_filter_list = context_filters
+        self.author_filter_list = author_filters
+        self.num_filters = num_filters # num filters for context == num filters for authors
         self.bs = 32
-        self._num_filters_total = len(filters)*num_filters
-        
+        self._num_context_filters_total = len(context_filters)*num_filters
+        self._num_author_filters_total = len(author_filters)*num_filters
+
+        # TODO: Train own context embeddings from dictionary
+
         # context encoder
         self.context_encoder = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
-                                for f in self.filter_list]
-        
-        # Are inputs and outputs here really right?
-        self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
+                                for f in self.context_filter_list]
+        self.fc_context = nn.Linear(self._num_context_filters_total, self._num_context_filters_total)
 
         if self.use_authors:
-            # author encoder
+            # TODO: Train own author embeddings from dictionary
 
-            # author decoder
-            pass
+            # citing author encoder
+            self.authors_citing = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
+                                   for f in self.author_filter_list]
+            self.fc_authors_citing = nn.Linear(self._num_author_filters_total, self._num_author_filters_total)
+
+            # cited author encoder
+            self.authors_cited = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
+                                  for f in self.author_filter_list]
+            self.fc_authors_cited = nn.Linear(self._num_author_filters_total, self._num_author_filters_total)
 
         # decoder
 
-    def forward(self, x):
-        # encoder
+    def forward(self, context, title, *args):
+        # context encoder
         # output: List of tensors w. shape: batch size, 1, num_filters, 1
-        x = [encoder(x) for encoder in self.context_encoder]
+        context = [encoder(context) for encoder in self.context_encoder]
         # output shape: batch_size, list_length, num_filters
-        x = torch.cat(x, dim=1).squeeze()
+        context = torch.cat(context, dim=1).squeeze()
         # output shape: batch_size, list_length*num_filters
-        x = x.view(self._bs, -1)
+        context = context.view(self._bs, -1)
 
         # apply nonlinear mapping
-        x = torch.tanh(self.fc(x))
-        x = x.view(-1, len(self._filter_list), self.num_filters)
+        context = torch.tanh(self.fc_context(context))
+        context = context.view(-1, len(self.context_filter_list), self.num_filters)
+
+        if self.use_authors and len(*args > 0):
+            assert len(*args) == 2, "The data contains too many/too little inputs!"
+            authors_citing, authors_cited = *args
+
+            # encode citing authors
+            authors_citing = [encoder(authors_citing) for encoder in self.authors_citing]
+            authors_citing = torch.cat(authors_citing, dim=1).squeeze()
+            authors_citing = authors_citing.view(self._bs, -1)
+            authors_citing = torch.tanh(self.fc_authors_citing(authors_citing))
+            authors_citing = authors_citing.view(-1, len(self.author_filter_list), self.num_filters)
+
+            # encode citing authors
+            authors_cited = [encoder(authors_cited) for encoder in self.authors_cited]
+            authors_cited = torch.cat(authors_cited, dim=1).squeeze()
+            authors_cited = authors_cited.view(self._bs, -1)
+            authors_cited = torch.tanh(self.fc_authors_cited(authors_cited))
+            authors_cited = authors_cited.view(-1, len(self.author_filter_list), self.num_filters)
+            
+
 
         #------------------------------------------------------------------
         # decode
 
-        return x
+        return x # What does this thing actually return????
