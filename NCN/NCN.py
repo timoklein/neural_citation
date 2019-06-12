@@ -1,30 +1,30 @@
 import torch
 from torch import nn
-from torch import optim
 import torch.nn.functional as F
 from typing import List
 
 Filters = List[int]
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-"""Set the device to GPU if available."""
-
-MAX_LENGTH = 20
-
 class TDNN(nn.Module):
     """
-    Single TDNN Block for the neural citation network.  
+    Single TDNN Block for the neural citation network.
     Implementation is based on:  
     https://ronan.collobert.com/pub/matos/2008_nlp_icml.pdf.  
-    Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.   
+    Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.  
+
     **Parameters**:   
+
     - *filter_size* (int): filter length for the convolutional operation  
     - *embed_size* (int): Dimension of the input word embeddings  
     - *num_filters* (int=64): Number of convolutional filters  
+
     **Input**:  
-    - Tensor of shape: [N: batch size, D: embedding dimensions, L: sequence length].  
+
+    - *Tensor* of shape: [N: batch size, D: embedding dimensions, L: sequence length].  
+
     **Output**:  
-    - Tensor of shape: [batch_size, num_filters]. 
+
+    - *Tensor* of shape: [batch_size, num_filters]. 
     """
 
     def __init__(self, filter_size: int, embed_size: int, num_filters: int = 64):
@@ -52,13 +52,43 @@ class TDNN(nn.Module):
         return torch.einsum("nchw -> nhcw", x)
 
 
+# Pad all sequences to equal length so the attention mechanism work -> We don't need this
+# Why do we nee an encoder and decoder Embedding?
+# Because even though we use English as language for input and output,
+# the words used are in the contexts and the cited paper's titles.
+# This is especially pronounced when using a small vocabulary (like 20k words).
+# TODO: Define min and max length based on data -> We need only the max and we don't need to pad :)
+# TODO: Check how we can get only the last relevant output
+# TODO: Implement bucketing to avoid excess computation due to 0 padding -> We don't need that
+# TODO: Masking the loss function??? Why??
+
+
 class AttnDecoderRNN(nn.Module):
-    def __init__(self, hidden_size, output_size, dropout_p=0.2, max_length=MAX_LENGTH):
-        super(AttnDecoderRNN, self).__init__()
+    """
+    Decoder module for a seq2seq model. The implementation is based on the PyTorch documentation.
+    The original code can be found here:  
+    https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html.  
+    Background: https://arxiv.org/pdf/1409.0473.pdf.  
+    
+    **Parameters**:  
+    
+    - *param1* (type):  
+    
+    **Input**:  
+    
+    - Input 1: [shapes]  
+    
+    **Output**:  
+    
+    - Output 1: [shapes]  
+    """
+    def __init__(self, hidden_size: int, output_size: int, dropout_p=0.2, max_length: int = 20):
+        super().__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.dropout_p = dropout_p
         self.max_length = max_length
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.embedding = nn.Embedding(self.output_size, self.hidden_size)
         self.attn = nn.Linear(self.hidden_size * 2, self.max_length)
@@ -86,7 +116,7 @@ class AttnDecoderRNN(nn.Module):
         return output, hidden, attn_weights
 
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=DEVICE)
+        return torch.zeros(1, 1, self.hidden_size, device=self._device)
 
 
 
@@ -98,7 +128,22 @@ class NCN(nn.Module):
     The author's tensorflow code is on github:  
     https://github.com/tebesu/NeuralCitationNetwork.  
 
-
+    **Parameters**:  
+    
+    - *num_filters* (int=64): Number of filters applied in the TDNN layers of the model.  
+    - *authors* (bool=False): Use additional author information or not.  
+    - *w_emebd_size* (int=300): Input word embedding dimensions.  
+    - *num_layers* (int=1): Number of RNN layers.  
+    - *hidden_dims* (int=64): Dimension of the RNN hidden states.  
+    - *batch_size* (int=32): Training batch size.  
+    
+    **Input**:  
+    
+    - *Tensor* of shape: [N: batch size, D: embedding dimensions, L: sequence length].   
+    
+    **Output**:  
+    
+    - Output 1: [shapes] 
     """
     def __init__(self, filters: Filters,
                        num_filters: int = 64,
@@ -108,16 +153,16 @@ class NCN(nn.Module):
                        hidden_dims: int = 64,
                        batch_size: int = 32):
         super().__init__()
-        self._use_authors = authors
-        self._filter_list = filters
-        self._num_filters = num_filters
-        self._bs = 32
 
+        self.use_authors = authors
+        self.filter_list = filters
+        self.num_filters = num_filters
+        self.bs = 32
         self._num_filters_total = len(filters)*num_filters
         
         # context encoder
         self.convs = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
-                      for f in self._filter_list]
+                      for f in self.filter_list]
         
         # Are inputs and outputs here really right?
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
@@ -136,7 +181,7 @@ class NCN(nn.Module):
 
         # apply nonlinear mapping
         x = torch.tanh(self.fc(x))
-        x = x.view(-1, len(self._filter_list), self._num_filters)
+        x = x.view(-1, len(self._filter_list), self.num_filters)
 
         #------------------------------------------------------------------
         # decode
