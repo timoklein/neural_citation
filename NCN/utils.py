@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Union, Collection, List, Dict
 
 
-logging.basicConfig(level=logging.DEBUG, style='$')
+logging.basicConfig(level=logging.INFO, style='$')
 
 PathOrStr = Union[Path, str]
 """Custom type for Paths or pathlike objects."""
@@ -19,11 +19,15 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 
 def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
     """
-    Preprocessing function for preprocessing arxiv CS paper text.     
+    Preprocessing function for preprocessing arxiv CS paper text.  
+
     **Parameters**:   
+
     - *text* (str): .txt file string object containing the text of a paper.  
-    - *delimiter* (str = "\\n============\\n"): token separating text sentences.        
+    - *delimiter* (str = "\\n============\\n"): token separating text sentences.  
+
     **Output**:  
+
     - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
     """
     text = re.sub("<formula>", '', text)
@@ -37,18 +41,22 @@ def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
 
 def process_refs(refs: str, delimiter_patterns: str = "GC|DBLP") -> List[str]:
     """
-    Preprocessing function for preprocessing arxiv CS paper references.     
+    Preprocessing function for preprocessing arxiv CS paper references.   
+
     **Parameters**:   
+
     - *refs* (str): reference file string.  
-    - *delimiter_patterns* (str = "GC|DBLP"): regex patterns used to split the inidividual references.     
+    - *delimiter_patterns* (str = "GC|DBLP"): regex patterns used to split the inidividual references.  
+
     **Output**:  
+
     - List citation contexts split at *delimiter*.
     """
     refs = re.sub("\n", '', refs)
     return re.split(delimiter_patterns, refs)
 
 
-# TODO: FIX ref splitting at \n to GC and DBLP (have to replace \n beforehand) -> use re.split w. multiple delimiters
+
 def generate_context_samples(contexts: Collection[str], refs: Collection[str], 
                        meta: Dict[str, str], textpath: Path) -> DataFrame:
     samples = []
@@ -89,8 +97,10 @@ def clean_incomplete_data(path: PathOrStr) -> None:
     """
     Cleaning function for the arxiv CS dataset. Checks all .txt files in the target folder and looks
     for matching .ref and .meta files. If a file is missing, all others are deleted.  
-    If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.     
+    If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.  
+
     **Parameters**:   
+
     - *path* (PathOrStr): Path object or string to the dataset.      
     """
     path = Path(path)
@@ -105,7 +115,7 @@ def clean_incomplete_data(path: PathOrStr) -> None:
 
         if ( not metapath.exists() ) or ( not refpath.exists() ):
             incomplete_paths += 1
-            logging.debug(f"Found incomplete file: {textpath.stem}")
+            logging.info(f"Found incomplete file: {textpath.stem}")
             textpath.unlink()
             try:
                 metapath.unlink()
@@ -125,14 +135,14 @@ def clean_incomplete_data(path: PathOrStr) -> None:
 
             if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
                 empty_files += 1
-                logging.debug(f"Found empty file: {textpath.stem}")
+                logging.info(f"Found empty file: {textpath.stem}")
                 textpath.unlink()
                 metapath.unlink()
                 refpath.unlink()
     
     message = (f"Incomplete paths(not all files present): {incomplete_paths} out of {no_files}"
                 f"\nAt least one empty file: {empty_files} out of {no_files}")
-    logging.debug(message)
+    logging.info(message)
 
 
 def prepare_data(path: PathOrStr) -> None:
@@ -141,7 +151,9 @@ def prepare_data(path: PathOrStr) -> None:
     and stores them in a DataFrame.  
     Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
     The resulting DataFrame is saved as Python pickle object in the parent directory.  
+
     **Parameters**:   
+
     - *path* (PathOrStr): Path object or string to the dataset.
     """
     path = Path(path)
@@ -172,10 +184,6 @@ def prepare_data(path: PathOrStr) -> None:
     dataset.to_pickle(save_dir/"arxiv_data.pkl", compression=None)
 
 
-def main():
+if __name__ == '__main__':
     path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
     # clean_incomplete_data(path_to_data)
-
-
-if __name__ == '__main__':
-    main()

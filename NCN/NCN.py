@@ -161,19 +161,24 @@ class NCN(nn.Module):
         self._num_filters_total = len(filters)*num_filters
         
         # context encoder
-        self.convs = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
-                      for f in self.filter_list]
+        self.context_encoder = [TDNN(filter_size=f, embed_size = w_embed_size, num_filters=num_filters) 
+                                for f in self.filter_list]
         
         # Are inputs and outputs here really right?
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
 
+        if self.use_authors:
+            # author encoder
+
+            # author decoder
+            pass
 
         # decoder
 
     def forward(self, x):
         # encoder
         # output: List of tensors w. shape: batch size, 1, num_filters, 1
-        x = [encoder(x) for encoder in self.convs]
+        x = [encoder(x) for encoder in self.context_encoder]
         # output shape: batch_size, list_length, num_filters
         x = torch.cat(x, dim=1).squeeze()
         # output shape: batch_size, list_length*num_filters
