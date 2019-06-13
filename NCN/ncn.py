@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from typing import List
+import logging
 
 Filters = List[int]
 """Custom data type representing a list of filter lengths."""
@@ -166,6 +167,10 @@ class NCN(nn.Module):
         self._num_context_filters_total = len(context_filters)*num_filters
         self._num_author_filters_total = len(author_filters)*num_filters
 
+        # ncn logging stuff
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+
         # TODO: Train own context embeddings from dictionary
 
         # context encoder
@@ -188,22 +193,23 @@ class NCN(nn.Module):
 
         # TODO: Instantiate AttentionDecoder (Does this have to be different depending on authors?)
 
-    def forward(self, context, title, *args):
+    def forward(self, context, title, authors_citing=None, authors_cited=None):
+
+        self.logger.info("Using Author information")
+
         # context encoder
         # output: List of tensors w. shape: batch size, 1, num_filters, 1
         context = [encoder(context) for encoder in self.context_encoder]
         # output shape: batch_size, list_length, num_filters
         context = torch.cat(context, dim=1).squeeze()
         # output shape: batch_size, list_length*num_filters
-        context = context.view(self._bs, -1)
+        context = context.view(self.bs, -1)
 
         # apply nonlinear mapping
         context = torch.tanh(self.fc_context(context))
         context = context.view(-1, len(self.context_filter_list), self.num_filters)
 
-        if self.use_authors and len(*args > 0):
-            assert len(*args) == 2, "The data contains too many/too little inputs!"
-            authors_citing, authors_cited = *args
+        if self.use_authors and authors_citing is not None and authors_cited is not None:
 
             # encode citing authors
             authors_citing = [encoder(authors_citing) for encoder in self.authors_citing]
@@ -226,4 +232,4 @@ class NCN(nn.Module):
         #------------------------------------------------------------------
         # decode
 
-        return x # What does this thing actually return????
+        return context # What does this thing actually return????
