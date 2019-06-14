@@ -329,6 +329,8 @@ class DeepCNNtoRNN(BaseRNN):
                                                         self.config.author_embed_size],
                                                        initializer=tf.random_normal_initializer(stddev=0.01))
 
+                # Same embedding used for both encoder and decoder authors!
+
                 # [batch size, max authors, author embeding size]
                 self._auth_encoder_embed = tf.nn.embedding_lookup(self._auth_embeddings,
                                                           self.encoder_authors)

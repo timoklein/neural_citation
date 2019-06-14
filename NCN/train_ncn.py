@@ -20,7 +20,6 @@ TF_RATIO = 0.5
 # TODO: Type hints
 # TODO: Refactor to fit NCN
 # TODO: Documentation
-# FIXME: asdasdas
 
 def showPlot(points):
     plt.figure()
