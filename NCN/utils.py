@@ -158,6 +158,8 @@ def prepare_data(path: PathOrStr) -> None:
     """
     path = Path(path)
     save_dir = path.parent/"batched_data"
+    if not save_dir.exists(): save_dir.mkdir()
+    
     data = []
 
     no_total = len(list(path.glob("*.txt")))
@@ -184,9 +186,9 @@ def prepare_data(path: PathOrStr) -> None:
         meta = json.loads(meta)
         text = process_text(text)
         refs = process_refs(refs)
-        data.append(generate_context_samples(text, refs, meta, textpath))
+        data.extend(generate_context_samples(text, refs, meta, textpath))
 
-        if i%3000 == 0:
+        if i%3000 == 0 and i > 0:
             logging.info(f"Saving batch {batch_counter}")
 
             dataset = pd.concat(data, axis=0)
