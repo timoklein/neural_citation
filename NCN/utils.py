@@ -157,10 +157,19 @@ def prepare_data(path: PathOrStr) -> None:
     - **path** *(PathOrStr)*: Path object or string to the dataset.
     """
     path = Path(path)
-    save_dir = path.parent
+    save_dir = path.parent/"batched_data"
     data = []
 
-    for textpath in path.glob("*.txt"):
+    no_total = len(list(path.glob("*.txt")))
+    logging.info('-'*30)
+    logging.info(f"Total number of files to process: {no_total}")
+    logging.info('-'*30)
+
+    batch_counter = 0
+
+    for i, textpath in enumerate(path.glob("*.txt")):
+        if i % 100 == 0: logging.info(f"Processing file {i} of {no_total}...")
+        
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
 
@@ -176,14 +185,20 @@ def prepare_data(path: PathOrStr) -> None:
         text = process_text(text)
         refs = process_refs(refs)
         data.append(generate_context_samples(text, refs, meta, textpath))
-    
-    # prepare data for storage and save
-    dataset = pd.concat(data, axis=0)
-    dataset.reset_index(inplace=True)
-    dataset.drop("index", axis=1, inplace=True)
-    dataset.to_pickle(save_dir/"arxiv_data.pkl", compression=None)
+
+        if i%3000 == 0:
+            logging.info(f"Saving batch {batch_counter}")
+
+            dataset = pd.concat(data, axis=0)
+            dataset.reset_index(inplace=True)
+            dataset.drop("index", axis=1, inplace=True)
+            dataset.to_pickle(save_dir/f"arxiv_data_batch_{batch_counter}.pkl", compression=None)
+
+            # create new batch
+            batch_counter += 1
+            data = []
 
 
 if __name__ == '__main__':
     path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
-    # clean_incomplete_data(path_to_data)
+    prepare_data(path_to_data)
