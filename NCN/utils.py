@@ -21,12 +21,12 @@ def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper text.  
 
-    **Parameters**:   
+    ## Parameters:   
 
-    - *text* (str): .txt file string object containing the text of a paper.  
-    - *delimiter* (str = "\\n============\\n"): token separating text sentences.  
+    - **text** *(str)*: .txt file string object containing the text of a paper.  
+    - **delimiter** *(str = "\\n============\\n")*: token separating text sentences.  
 
-    **Output**:  
+    ## Output:  
 
     - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
     """
@@ -43,12 +43,12 @@ def process_refs(refs: str, delimiter_patterns: str = "GC|DBLP") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper references.   
 
-    **Parameters**:   
+    ## Parameters:   
 
-    - *refs* (str): reference file string.  
-    - *delimiter_patterns* (str = "GC|DBLP"): regex patterns used to split the inidividual references.  
+    - **refs** *(str)*: reference file string.  
+    - **delimiter_patterns** *(str = "GC|DBLP")*: regex patterns used to split the inidividual references.  
 
-    **Output**:  
+    ## Output:  
 
     - List citation contexts split at *delimiter*.
     """
@@ -99,9 +99,9 @@ def clean_incomplete_data(path: PathOrStr) -> None:
     for matching .ref and .meta files. If a file is missing, all others are deleted.  
     If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.  
 
-    **Parameters**:   
+    ## Parameters:   
 
-    - *path* (PathOrStr): Path object or string to the dataset.      
+    - **path** *(PathOrStr)*: Path object or string to the dataset.      
     """
     path = Path(path)
 
@@ -152,9 +152,9 @@ def prepare_data(path: PathOrStr) -> None:
     Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
     The resulting DataFrame is saved as Python pickle object in the parent directory.  
 
-    **Parameters**:   
+    ## Parameters:   
 
-    - *path* (PathOrStr): Path object or string to the dataset.
+    - **path** *(PathOrStr)*: Path object or string to the dataset.
     """
     path = Path(path)
     save_dir = path.parent
