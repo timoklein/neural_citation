@@ -16,11 +16,11 @@ class TDNN(nn.Module):
     https://ronan.collobert.com/pub/matos/2008_nlp_icml.pdf.  
     Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.  
 
-    **Parameters**:   
+    ## Parameters:   
 
-    - *filter_size* (int): filter length for the convolutional operation  
-    - *embed_size* (int): Dimension of the input word embeddings  
-    - *num_filters* (int=64): Number of convolutional filters  
+    - **filter_size** *(int)*: filter length for the convolutional operation  
+    - **embed_size** *(int)*: Dimension of the input word embeddings  
+    - **num_filters** *(int=64)*: Number of convolutional filters  
     """
 
     def __init__(self, filter_size: int, embed_size: int, num_filters: int = 64):
@@ -31,13 +31,15 @@ class TDNN(nn.Module):
 
     def forward(self, x):
         """
-        **Input**:  
+        ## Input:  
 
-        - *Tensor* of shape: [N: batch size, D: embedding dimensions, L: sequence length].  
+        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:  
+            Input sequence.
 
-        **Output**:  
+        ## Output:  
 
-        - *Tensor* of shape: [batch_size, num_filters]. 
+        - **Tensor** *(batch_size, num_filters)*:  
+            Output sequence. 
         """
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
         x = x.unsqueeze(1)
@@ -56,14 +58,15 @@ class TDNN(nn.Module):
 
 class TDNNEncoder(nn.Module):
     """
-    Encoder Module based on the TDNN architecture.  
+    Encoder Module based on the TDNN architecture.
+    Applies as list of filters with different region sizes on an input sequence.  
     
-    **Parameters**:  
+    ## Parameters:  
     
-    - *filters* (Filters): List of integers determining the filter lengths.    
-    - *num_filters* (int): Number of filters applied in the TDNN convolutional layers.  
-    - *embed_size* (int): Dimensions of the used embeddings.  
-    - *bach_size* (int): Training batch size. 
+    - **filters** *(Filters)*: List of integers determining the filter lengths.    
+    - **num_filters** *(int)*: Number of filters applied in the TDNN convolutional layers.  
+    - **embed_size** *(int)*: Dimensions of the used embeddings.  
+    - **bach_size** *(int)*: Training batch size. 
     """
     def __init__(self, filters: Filters,
                        num_filters: int,
@@ -82,13 +85,15 @@ class TDNNEncoder(nn.Module):
 
     def forward(self, x):
         """
-        **Input**:  
+        ## Input:  
 
-        - *Tensor* of shape: [N: batch size, D: embedding dimensions, L: sequence length].  
+        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:
+            Input sequence.  
 
-        **Output**:  
+        ## Output:  
 
-        - *Tensor* of shape: [batch_size, number of filter sizes, num_filters].
+        - **Tensor** *(batch_size, number of filter sizes, num_filters)*:
+            Output sequence.
         """
         # output: List of tensors w. shape: batch size, 1, num_filters, 1
         x = [encoder(x) for encoder in self.encoder]
@@ -121,13 +126,13 @@ class AttnDecoderRNN(nn.Module):
     https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html.  
     Background: https://arxiv.org/pdf/1409.0473.pdf.  
     
-    **Parameters**:  
+    ## Parameters:  
     
-    - *hidden_size* (int): Dimensions of GRU's hidden state.  
-    - *output_size* (int): Output dimensions of the last linear layer (vocab_size)  
-    - *dropout p* (float=0.2): Probability for dropout regularization. If 0, no regularization is applied.
+    - **hidden_size** *(int)*: Dimensions of GRU's hidden state.  
+    - **output_size** *(int)*: Output dimensions of the last linear layer (vocab_size)  
+    - **dropout_p** *(float=0.2)*: Probability for dropout regularization. If 0, no regularization is applied.
         Dropout is also applied to the recurrent layers.  
-    - *max_length* (int): Maximum sequence length of the input (# of attention weights).   
+    - **max_length** *(int)*: Maximum sequence length of the input (# of attention weights).   
     """
     def __init__(self, embed_size: int, 
                        vocab_size: int, 
@@ -140,7 +145,7 @@ class AttnDecoderRNN(nn.Module):
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # embed input sequence, in our case cited paper title
-        self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        # self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
 
         # always calculate 20 attention weights (don't use if input is shorter)
         # Why embed_size*2? We get hidden state and prev attention output as new input
@@ -155,18 +160,18 @@ class AttnDecoderRNN(nn.Module):
 
     def forward(self, input, hidden, encoder_outputs):
         """
-        **Inputs**:  
+        ## Inputs:  
     
-        - Input 1: [shapes]  
+        - **Input 1** *(shapes)*:   .    
         
-        **Outputs**:  
+        ## Outputs:  
         
-        - Output 1: [shapes] 
+        - **Output 1** *(shapes)*:   .    
         """
-        # Embed input word!!!! and apply dropout
+        # Embed input word index!!!! and apply dropout
         # Output is processed word for word
-        embedded = self.embedding(input).view(1, 1, -1)
-        embedded = self.dropout(embedded)
+        # embedded = self.embedding(input).view(1, 1, -1)
+        # embedded = self.dropout(embedded)
 
 
         attn_weights = torch.softmax(
@@ -196,14 +201,14 @@ class NCN(nn.Module):
     The author's tensorflow code is on github:  
     https://github.com/tebesu/NeuralCitationNetwork.  
 
-    **Parameters**:  
+    ## Parameters:  
     
-    - *num_filters* (int=64): Number of filters applied in the TDNN layers of the model.  
-    - *authors* (bool=False): Use additional author information or not.  
-    - *w_emebd_size* (int=300): Input word embedding dimensions.  
-    - *num_layers* (int=1): Number of RNN layers.  
-    - *hidden_dims* (int=64): Dimension of the RNN hidden states.  
-    - *batch_size* (int=32): Training batch size.  
+    - **num_filters** *(int=64)*: Number of filters applied in the TDNN layers of the model.  
+    - **authors** *(bool=False)*: Use additional author information or not.  
+    - **w_emebd_size** *(int=300)*: Input word embedding dimensions.  
+    - **num_layers** *(int=1)*: Number of RNN layers.  
+    - **hidden_dims** *(int=64)*: Dimension of the RNN hidden states.  
+    - **batch_size** *(int=32)*: Training batch size.  
     """
     def __init__(self, context_filters: Filters,
                        author_filters = Filters,
@@ -240,13 +245,14 @@ class NCN(nn.Module):
 
     def forward(self, context, title, authors_citing=None, authors_cited=None):
         """
-        **Inputs**:  
+        ## Inputs:  
     
-        - *Tensor* of shape: [N: batch size, D: embedding dimensions, L: sequence length].   
+        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:  
+            Encoder input sequence.  
         
-        **Output**:  
+        ## Output:  
         
-        - Output 1: [shapes] 
+        - **Output 1**: *(shapes)* 
         """
 
         context = self.context_encoder(context)
