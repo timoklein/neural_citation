@@ -162,7 +162,7 @@ def prepare_data(path: PathOrStr) -> None:
     - **path** *(PathOrStr)*: Path object or string to the dataset.
     """
     path = Path(path)
-    save_dir = path.parent/"batched_data"
+    save_dir = path.parent
     if not save_dir.exists(): save_dir.mkdir()
     
     data = []
@@ -192,10 +192,10 @@ def prepare_data(path: PathOrStr) -> None:
         data.extend(generate_context_samples(text, refs, meta, textpath))
 
 
-        dataset = pd.concat(data, axis=0)
-        dataset.reset_index(inplace=True)
-        dataset.drop("index", axis=1, inplace=True)
-        dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
+    dataset = pd.concat(data, axis=0)
+    dataset.reset_index(inplace=True)
+    dataset.drop("index", axis=1, inplace=True)
+    dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
 
 
 if __name__ == '__main__':
