@@ -67,29 +67,34 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
             # remove the identifiers as we use them to split .refs file
             s = re.sub("GC|DBLP", '', hit)
             for ref in refs:
-                if re.search(s[1:-1], ref):
-                    # find and preprocess authors
-                    authors = re.findall(";(.*?)\`\`", ref)
-                    authors = ''.join(authors)
-                    authors = re.sub(r"\band\b", ',', authors)
-                    authors = re.sub(r"-", '', authors)
-                    authors = authors.strip(',  ')
+                try:
+                    if re.search(s[1:-1], ref):
+                        # find and preprocess authors
+                        authors = re.findall(";(.*?)\`\`", ref)
+                        authors = ''.join(authors)
+                        authors = re.sub(r"\band\b", ',', authors)
+                        authors = re.sub(r"-", '', authors)
+                        authors = authors.strip(',  ')
 
-                    # skip the sample if there is no author information
-                    if len(authors) == 0:
-                        continue
-                    
-                    # find and preprocess titles
-                    title = re.findall('\`\`(.*?)\'\'', ref)
-                    title = ''.join(title).strip(',')
-                    
-                    # generate sample in correct format
-                    sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
-                            "title_citing": meta["title"],
-                            "authors_citing": ','.join(meta["authors"]),
-                            "title_cited": title,
-                            "authors_cited": authors}
-                    samples.append(pd.DataFrame(sample, index=[0]))
+                        # skip the sample if there is no author information
+                        if len(authors) == 0:
+                            continue
+                        
+                        # find and preprocess titles
+                        title = re.findall('\`\`(.*?)\'\'', ref)
+                        title = ''.join(title).strip(',')
+                        
+                        # generate sample in correct format
+                        sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
+                                "title_citing": meta["title"],
+                                "authors_citing": ','.join(meta["authors"]),
+                                "title_cited": title,
+                                "authors_cited": authors}
+                        samples.append(pd.DataFrame(sample, index=[0]))
+                except:
+                    logging.info('!'*30)
+                    logging.info(f"Found erroneous ref at {textpath.stem}")
+                    logging.info(ref)
     return samples
 
 
@@ -167,8 +172,6 @@ def prepare_data(path: PathOrStr) -> None:
     logging.info(f"Total number of files to process: {no_total}")
     logging.info('-'*30)
 
-    batch_counter = 0
-
     for i, textpath in enumerate(path.glob("*.txt")):
         if i % 100 == 0: logging.info(f"Processing file {i} of {no_total}...")
         
@@ -188,18 +191,11 @@ def prepare_data(path: PathOrStr) -> None:
         refs = process_refs(refs)
         data.extend(generate_context_samples(text, refs, meta, textpath))
 
-        if i%3000 == 0 and i > 0:
-            logging.info(f"Saving batch {batch_counter}")
 
-            dataset = pd.concat(data, axis=0)
-            dataset.reset_index(inplace=True)
-            dataset.drop("index", axis=1, inplace=True)
-            dataset.to_pickle(save_dir/f"arxiv_data_batch_{batch_counter}.pkl", compression=None)
-
-            # create new batch
-            batch_counter += 1
-            data = []
-            dataset = None
+        dataset = pd.concat(data, axis=0)
+        dataset.reset_index(inplace=True)
+        dataset.drop("index", axis=1, inplace=True)
+        dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
 
 
 if __name__ == '__main__':
