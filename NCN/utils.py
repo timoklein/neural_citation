@@ -17,7 +17,7 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
 
 
-def process_text(text: str, delimiter: str = "\\n============\\n") -> List[str]:
+def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
     """
     Preprocessing function for preprocessing arxiv CS paper text.  
 
@@ -199,6 +199,7 @@ def prepare_data(path: PathOrStr) -> None:
             # create new batch
             batch_counter += 1
             data = []
+            dataset = None
 
 
 if __name__ == '__main__':
