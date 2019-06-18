@@ -8,6 +8,10 @@ Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
 MAX_LENGTH = 20
+"""Maximum decoder sequence length. Determines the number of attention weights."""
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+"""Check for a GPU globally."""
 
 class TDNN(nn.Module):
     """
@@ -136,29 +140,25 @@ class AttnDecoderRNN(nn.Module):
     """
     def __init__(self, embed_size: int, 
                        vocab_size: int, 
-                       dropout_p: int = 0.2, 
-                       layers: int = 1,
-                       max_length: int = MAX_LENGTH):
+                       dropout_p: int, 
+                       max_length: int,
+                       layers: int = 1,):
         super().__init__()
-        self.embed_size = embed_size
-        self.vocab_size = vocab_size
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # embed input sequence, in our case cited paper title
-        # self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        self.embed_size = embed_size # hidden size == embed size in our model
 
         # always calculate 20 attention weights (don't use if input is shorter)
         # Why embed_size*2? We get hidden state and prev attention output as new input
-        self.attn = nn.Linear(self.embed_size * 2, max_length)
+        self.attn = nn.Linear(embed_size * 2, max_length)
         # Combine attention and hidden state
-        self.attn_combine = nn.Linear(self.embed_size * 2, self.embed_size)
+        self.attn_combine = nn.Linear(embed_size * 2, embed_size)
         self.dropout = nn.Dropout(dropout_p)
-        self.gru = nn.GRU(self.hidden_size, self.hidden_size, dropout= dropout_p, num_layers=layers)
+        self.gru = nn.GRU(embed_size, embed_size, dropout= dropout_p, num_layers=layers)
 
         # output
-        self.out = nn.Linear(self.hidden_size, self.output_size)
+        self.out = nn.Linear(embed_size, vocab_size)
 
-    def forward(self, input, hidden, encoder_outputs):
+    def forward(self, x, hidden, encoder_outputs):
         """
         ## Inputs:  
     
@@ -168,28 +168,22 @@ class AttnDecoderRNN(nn.Module):
         
         - **Output 1** *(shapes)*:   .    
         """
-        # Embed input word index!!!! and apply dropout
-        # Output is processed word for word
-        # embedded = self.embedding(input).view(1, 1, -1)
-        # embedded = self.dropout(embedded)
-
-
         attn_weights = torch.softmax(
-            self.attn(torch.cat((embedded[0], hidden[0]), 1)), dim=1)
+            self.attn(torch.cat((x[0], hidden[0]), 1)), dim=1)
         attn_applied = torch.bmm(attn_weights.unsqueeze(0),
                                  encoder_outputs.unsqueeze(0))
 
-        output = torch.cat((embedded[0], attn_applied[0]), 1)
+        output = torch.cat((x[0], attn_applied[0]), 1)
         output = self.attn_combine(output).unsqueeze(0)
 
-        output = F.relu(output)
+        output = torch.relu(output)
         output, hidden = self.gru(output, hidden)
 
-        output = F.log_softmax(self.out(output[0]), dim=1)
+        output = torch.log_softmax(self.out(output[0]), dim=1)
         return output, hidden, attn_weights
 
-    def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=self._device)
+    def initHidden(self, bs):
+        return torch.zeros(1, 1, self.embed_size, device=DEVICE)
 
 
 
@@ -211,39 +205,49 @@ class NCN(nn.Module):
     - **batch_size** *(int=32)*: Training batch size.  
     """
     def __init__(self, context_filters: Filters,
-                       author_filters = Filters,
+                       author_filters: Filters,
+                       vocab_size: int,
+                       author_vocab_size: int,
                        num_filters: int = 64,
                        authors: bool = False, 
-                       embed_size: int = 300,
+                       embed_size: int = 64,
                        num_layers: int = 1,
                        hidden_dims: int = 64,
-                       batch_size: int = 32):
+                       batch_size: int = 32,
+                       dropout_p: float = 0.2):
         super().__init__()
 
         self.use_authors = authors
         self.context_filter_list = context_filters
         self.author_filter_list = author_filters
         self.num_filters = num_filters # num filters for context == num filters for authors
-        self.bs = 32
+        self.bs = batch_size
+        self._batched = self.bs > 1
+        self.vocab_size = vocab_size
+        self.author_vocab_size = author_vocab_size
+        self.dropout_p = dropout_p
 
         # ncn logging stuff
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-        # TODO: Train own context embeddings from dictionary
+        self.context_embedding = nn.Embedding(self.vocab_size, self.embed_size)
 
         # context encoder
         self.context_encoder = TDNNEncoder(self.context_filter_list, self.num_filters, embed_size, self.bs)
 
         if self.use_authors:
-            # TODO: Train shared author embeddings from dictionary
+            self.author_embedding = nn.Embedding(self.author_vocab_size, self.embed_size)
 
             self.citing_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
             self.cited_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
 
-        # TODO: Instantiate AttentionDecoder (Does this have to be different depending on authors?)
+        
+        self.title_embedding = nn.Embedding(self.vocab_size, self.embed_size)
 
-    def forward(self, context, title, authors_citing=None, authors_cited=None):
+        self.decoder = AttnDecoderRNN(embed_size, self.vocab_size, self.dropout_p, MAX_LENGTH)
+
+    def forward(self, context, title, hidden, authors_citing=None, authors_cited=None):
         """
         ## Inputs:  
     
@@ -255,18 +259,33 @@ class NCN(nn.Module):
         - **Output 1**: *(shapes)* 
         """
 
+        # Embed and encode context
+        context = self.context_embedding(context).view(1, 1, -1)
+        context = self.dropout(context)
         context = self.context_encoder(context)
 
         if self.use_authors and authors_citing is not None and authors_cited is not None:
             self.logger.info("Using Author information")
 
+            # Embed authors in shared space
+            authors_citing = self.author_embedding(authors_citing).view(1, 1, -1)
+            authors_citing = self.dropout(authors_citing)
+            authors_cited = self.author_embedding(authors_cited).view(1, 1, -1)
+            authors_cited = self.dropout(authors_cited)
+
+            # Encode author information and concatenate
             authors_citing = self.citing_author_encoder(authors_citing)
             authors_cited = self.cited_author_encoder(authors_cited)
             cat_encodings = torch.cat([context, authors_citing, authors_cited], dim=1)
         
-
-
-            
-
-
-        return context # What does this thing actually return???? -> NLLLoss???
+        # Embed title
+        title = self.title_embedding(title).view(1, 1, -1)
+        title = self.dropout(title)
+        
+        if self.use_authors: 
+            return self.decoder(title, hidden, cat_encodings)
+        else:
+            return self.decoder(title, hidden, context)
+    
+    def init_hidden(self):
+        return self.decoder.initHidden(self.bs)
