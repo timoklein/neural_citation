@@ -116,12 +116,8 @@ class TDNNEncoder(nn.Module):
 
 
 
-# Why do we nee an encoder and decoder Embedding?
-# Because even though we use English as language for input and output,
-# the words used are in the contexts and the cited paper's titles.
-# This is especially pronounced when using a small vocabulary (like 20k words).
-# TODO: Check how we can get only the last relevant output
-
+# TODO: Debug this
+# TODO: Get this to work with batches
 
 class AttnDecoderRNN(nn.Module):
     """
@@ -186,7 +182,8 @@ class AttnDecoderRNN(nn.Module):
         return torch.zeros(1, 1, self.embed_size, device=DEVICE)
 
 
-
+# TODO: Debug this
+# TODO: Get this to work with batches
 class NCN(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  

@@ -1,13 +1,10 @@
 # Deep citation recommendation
-An implementation of a deep learning model for citation recommendation.
-
-## To-Dos
-* Implement NCN model (Timo)
-* Implement NCN training (Timo)
-* Preprocess Data (Timo)
-* Prepare Overleaf Project (Joan)
+PyTorch reimplementation of the neural citation network.
+Authors original code can be found here:  
+https://github.com/tebesu/NeuralCitationNetwork.
  
 ## Questions
+* Embeddings: Rare words vs common words. How to choose vocab?
 
 
 ## Stats  

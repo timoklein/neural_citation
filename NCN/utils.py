@@ -85,8 +85,8 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
                         title = ''.join(title).strip(',')
                         
                         # generate sample in correct format
-                        sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
-                                "title_citing": meta["title"],
+                        sample = {"title_citing": meta["title"],
+                                "context": re.sub(CITATION_PATTERNS, '', sentence),
                                 "authors_citing": ','.join(meta["authors"]),
                                 "title_cited": title,
                                 "authors_cited": authors}
