@@ -233,6 +233,7 @@ def preprocess_dataset(path: PathOrStr) -> None:
     tokenizer = Tokenizer(nlp.vocab)
     lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES)
 
+    # TODO: Rework preprocessing to replace numbers and punctuation beforehand
     # preprocessing steps for contexts and cited titles
     for col in ["context", "title_cited"]:
         # lower case and strip
@@ -244,8 +245,26 @@ def preprocess_dataset(path: PathOrStr) -> None:
         data.loc[:, col] = data.loc[:, col].apply(lambda x: list(filter(lambda tok: tok.strip(), x)))
         data.loc[:, col] = data.loc[:, col].apply(lambda x: list(filter(lambda tok: tok.isalpha(), x)))
 
-    # TODO: Print results upon complention (Vocab sizes)
+    context_list = [item for sublist in data["context"].values.tolist() for item in sublist]
+    title_list = [item for sublist in data["title_cited"].values.tolist() for item in sublist]
+    context_counts = Counter(context_list)
+    title_counts = Counter(title_list)
+    msg = (f"Unique context tokens found: {len(context_counts)}"
+           f"\nUnique title tokens found: {len(context_counts)}")
+    logging.info(msg)
+
+
     # TODO: Preprocessing for authors (do all steps except lemmatization -> check number of authors)
+    for col in ["context", "title_cited"]:
+        pass
+
+    citing_list = [item for sublist in data["authors_citing"].values.tolist() for item in sublist]
+    cited_list = [item for sublist in data["authors_cited"].values.tolist() for item in sublist]
+    citing_counts = Counter(citing_list)
+    cited_counts = Counter(cited_list)
+    msg = (f"Unique context tokens found: {len(citing_counts)}"
+           f"\nUnique title tokens found: {len(cited_counts)}")
+    logging.info(msg)
 
     data.to_pickle(path/f"processed_data.pkl", compression=None)
 
