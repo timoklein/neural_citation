@@ -2,13 +2,13 @@ import re
 import pandas as pd
 import logging
 import json
-from pandas import DataFrame
+import string
+import spacy
 from pathlib import Path
 from typing import Union, Collection, List, Dict
 from collections import Counter
-import spacy
-from spacy.lemmatizer import Lemmatizer
-from spacy.lang.en import LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES
+from functools import partial
+from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 
 
@@ -20,6 +20,9 @@ PathOrStr = Union[Path, str]
 
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
+
+STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
+"""Set of stopwords obtained via spacy."""
 
 
 def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
@@ -202,7 +205,39 @@ def prepare_data(path: PathOrStr) -> None:
     dataset.drop("index", axis=1, inplace=True)
     dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
 
-def preprocess_dataset(path: PathOrStr) -> None:
+
+def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
+    """
+    Applies the following preprocessing steps on a string:  
+
+    1. Lowercase.  
+    2. Remove all punctuation.  
+    3. Tokenize.  
+    4. Remove numbers.  
+    5. Lemmatize.  
+    6. Remove stopwords.  
+    7. Remove blanks
+  
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed tokens.
+    """
+    text = text.lower().strip()
+    text = re.sub("[" + re.escape(string.punctuation) + "]", "", text)
+    text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
+    text = [token for token in text if not token in STOPWORDS]
+    text = [token for token in text if token.strip()]
+    
+    return text
+
+
+def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_size: int = 20000) -> None:
     """
     Insert your description here.  
     
@@ -231,19 +266,11 @@ def preprocess_dataset(path: PathOrStr) -> None:
     # instantiate spacy model and preprocessers
     nlp = spacy.load("en_core_web_lg")
     tokenizer = Tokenizer(nlp.vocab)
-    lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES)
 
-    # TODO: Rework preprocessing to replace numbers and punctuation beforehand
+    preprocessor = partial(title_context_preprocessing, tokenizer=tokenizer)
     # preprocessing steps for contexts and cited titles
     for col in ["context", "title_cited"]:
-        # lower case and strip
-        data.loc[:, col] = data.loc[:, col].str.lower()
-        data.loc[:, col] = data.loc[:, col].str.strip()
-        # lemmatize, stopword removal, punctuation removal
-        data.loc[:, col] = data.loc[:, col].apply(lambda x: [token.lemma_ for token in tokenizer(x) if not token.is_stop and not token.is_punct])
-        # removing numbers and blanks
-        data.loc[:, col] = data.loc[:, col].apply(lambda x: list(filter(lambda tok: tok.strip(), x)))
-        data.loc[:, col] = data.loc[:, col].apply(lambda x: list(filter(lambda tok: tok.isalpha(), x)))
+        data[col] = data[col].map(preprocessor)
 
     context_list = [item for sublist in data["context"].values.tolist() for item in sublist]
     title_list = [item for sublist in data["title_cited"].values.tolist() for item in sublist]
