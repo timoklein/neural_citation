@@ -237,6 +237,31 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
     return text
 
 
+def author_preprocessing(text: str) -> List[str]:
+    """
+    Applies the following preprocessing steps on a string:  
+
+    
+    1. Remove all numbers.  
+    2. Lowercase.  
+    3. Split at each comma.  
+    4. Remove blanks.  
+    5. Strip whitespace.  
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed author tokens. 
+    """
+    text = re.sub("\d*?", '', text)
+    text = text.lower().split(',')
+    text = [token.strip() for token in text if token.strip()]
+    return text
+
+
 def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_size: int = 20000) -> None:
     """
     Insert your description here.  
@@ -281,9 +306,8 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     logging.info(msg)
 
 
-    # TODO: Preprocessing for authors (do all steps except lemmatization -> check number of authors)
-    for col in ["context", "title_cited"]:
-        pass
+    for col in ["authors_citing", "authors_cited"]:
+        data[col] = data[col].map(author_preprocessing)
 
     citing_list = [item for sublist in data["authors_citing"].values.tolist() for item in sublist]
     cited_list = [item for sublist in data["authors_cited"].values.tolist() for item in sublist]
