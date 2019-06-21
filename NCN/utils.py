@@ -10,6 +10,7 @@ from collections import Counter
 from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
+from spacy.lang.en import English
 
 
 
@@ -302,7 +303,7 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     context_counts = Counter(context_list)
     title_counts = Counter(title_list)
     msg = (f"Unique context tokens found: {len(context_counts)}"
-           f"\nUnique title tokens found: {len(context_counts)}")
+           f"\nUnique title tokens found: {len(title_counts)}")
     logging.info(msg)
 
 
@@ -313,11 +314,11 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     cited_list = [item for sublist in data["authors_cited"].values.tolist() for item in sublist]
     citing_counts = Counter(citing_list)
     cited_counts = Counter(cited_list)
-    msg = (f"Unique context tokens found: {len(citing_counts)}"
-           f"\nUnique title tokens found: {len(cited_counts)}")
+    msg = (f"Unique citing authors tokens found: {len(citing_counts)}"
+           f"\nUnique cited authors tokens found: {len(cited_counts)}")
     logging.info(msg)
 
-    data.to_pickle(path/f"processed_data.pkl", compression=None)
+    data.to_pickle(path.parent/f"processed_data.pkl", compression=None)
 
 
 
