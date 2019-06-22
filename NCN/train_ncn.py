@@ -1,198 +1,133 @@
 import torch
 from torch import nn
-from torch import optim
-import torch.nn.functional as F
-import numpy as np
+from torch.autograd import Variable
+from core import BOS, EOS, DEVICE
+from model_utils import detach_hidden, masked_cross_entropy
 
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-plt.switch_backend('agg')
 
-from NCN.ncn import NCN, MAX_LENGTH
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-"""Set the available device gloablly."""
-
-# This should be 1 for NCN, right?
-TF_RATIO = 0.5
-"""Set the ratio for teacher forcing."""
-
-# TODO: Type hints
-# TODO: Refactor to fit NCN
-# TODO: Documentation
-
-def showPlot(points):
-    plt.figure()
-    fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
-    loc = ticker.MultipleLocator(base=0.2)
-    ax.yaxis.set_major_locator(loc)
-    plt.plot(points)
-
-def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
+def compute_grad_norm(parameters, norm_type=2):
+    """ Ref: http://pytorch.org/docs/0.3.0/_modules/torch/nn/utils/clip_grad.html#clip_grad_norm
     """
-    Insert your description here.  
-    
-    **Parameters**:  
-    
-    - *param1* (type):  
-    
-    **Input**:  
-    
-    - Input 1: [shapes]  
-    
-    **Output**:  
-    
-    - Output 1: [shapes]  
-    """
-    encoder_hidden = encoder.initHidden()
-
-    encoder_optimizer.zero_grad()
-    decoder_optimizer.zero_grad()
-
-    input_length = input_tensor.size(0)
-    target_length = target_tensor.size(0)
-
-    encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=DEVICE)
-
-    loss = 0
-
-    for ei in range(input_length):
-        encoder_output, encoder_hidden = encoder(
-            input_tensor[ei], encoder_hidden)
-        encoder_outputs[ei] = encoder_output[0, 0]
-
-    decoder_input = torch.tensor([[SOS_token]], device=DEVICE)
-
-    decoder_hidden = encoder_hidden
-
-    use_teacher_forcing = True if random.random() < TF_RATIO else False
-
-    if use_teacher_forcing:
-        # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            loss += criterion(decoder_output, target_tensor[di])
-            decoder_input = target_tensor[di]  # Teacher forcing
-
+    parameters = list(filter(lambda p: p.grad is not None, parameters))
+    norm_type = float(norm_type)
+    if norm_type == float('inf'):
+        total_norm = max(p.grad.data.abs().max() for p in parameters)
     else:
-        # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach()  # detach from history as input
+        total_norm = 0
+        for p in parameters:
+            param_norm = p.grad.data.norm(norm_type)
+            total_norm += param_norm ** norm_type
+        total_norm = total_norm ** (1. / norm_type)
+    return total_norm
 
-            loss += criterion(decoder_output, target_tensor[di])
-            if decoder_input.item() == EOS_token:
-                break
+def train(src_sents, tgt_sents, src_seqs, tgt_seqs, src_lens, tgt_lens,
+          encoder, decoder, encoder_optim, decoder_optim, opts):    
+    # -------------------------------------
+    # Prepare input and output placeholders
+    # -------------------------------------
+    # Last batch might not have the same size as we set to the `batch_size`
+    batch_size = src_seqs.size(1)
+    assert(batch_size == tgt_seqs.size(1))
+    
+    # Pack tensors to variables for neural network inputs (in order to autograd)
+    src_seqs = Variable(src_seqs)
+    tgt_seqs = Variable(tgt_seqs)
+    src_lens = Variable(torch.LongTensor(src_lens))
+    tgt_lens = Variable(torch.LongTensor(tgt_lens))
 
+    # Decoder's input
+    input_seq = Variable(torch.LongTensor([BOS] * batch_size))
+    
+    # Decoder's output sequence length = max target sequence length of current batch.
+    max_tgt_len = tgt_lens.data.max()
+    
+    # Store all decoder's outputs.
+    # **CRUTIAL** 
+    # Don't set:
+    # >> decoder_outputs = Variable(torch.zeros(max_tgt_len, batch_size, decoder.vocab_size))
+    # Varying tensor size could cause GPU allocate a new memory causing OOM, 
+    # so we intialize tensor with fixed size instead:
+    # `opts.max_seq_len` is a fixed number, unlike `max_tgt_len` always varys.
+    decoder_outputs = Variable(torch.zeros(opts.max_seq_len, batch_size, decoder.vocab_size))
+
+    # Move variables from CPU to GPU.
+    if USE_CUDA:
+        src_seqs = src_seqs.cuda()
+        tgt_seqs = tgt_seqs.cuda()
+        src_lens = src_lens.cuda()
+        tgt_lens = tgt_lens.cuda()
+        input_seq = input_seq.cuda()
+        decoder_outputs = decoder_outputs.cuda()
+        
+    # -------------------------------------
+    # Training mode (enable dropout)
+    # -------------------------------------
+    encoder.train()
+    decoder.train()
+    
+    # -------------------------------------
+    # Zero gradients, since optimizers will accumulate gradients for every backward.
+    # -------------------------------------
+    encoder_optim.zero_grad()
+    decoder_optim.zero_grad()
+        
+    # -------------------------------------
+    # Forward encoder
+    # -------------------------------------
+    encoder_outputs, encoder_hidden = encoder(src_seqs, src_lens.data.tolist())
+
+    # -------------------------------------
+    # Forward decoder
+    # -------------------------------------
+    # Initialize decoder's hidden state as encoder's last hidden state.
+    decoder_hidden = encoder_hidden
+    
+    # Run through decoder one time step at a time.
+    for t in range(max_tgt_len):
+        
+        # decoder returns:
+        # - decoder_output   : (batch_size, vocab_size)
+        # - decoder_hidden   : (num_layers, batch_size, hidden_size)
+        # - attention_weights: (batch_size, max_src_len)
+        decoder_output, decoder_hidden, attention_weights = decoder(input_seq, decoder_hidden,
+                                                                    encoder_outputs, src_lens)
+
+        # Store decoder outputs.
+        decoder_outputs[t] = decoder_output
+        
+        # Next input is current target
+        input_seq = tgt_seqs[t]
+        
+        # Detach hidden state:
+        detach_hidden(decoder_hidden)
+        
+    # -------------------------------------
+    # Compute loss
+    # -------------------------------------
+    loss, pred_seqs, num_corrects, num_words = masked_cross_entropy(
+        decoder_outputs[:max_tgt_len].transpose(0,1).contiguous(), 
+        tgt_seqs.transpose(0,1).contiguous(),
+        tgt_lens
+    )
+    
+    pred_seqs = pred_seqs[:max_tgt_len]
+    
+    # -------------------------------------
+    # Backward and optimize
+    # -------------------------------------
+    # Backward to get gradients w.r.t parameters in model.
     loss.backward()
-
-    encoder_optimizer.step()
-    decoder_optimizer.step()
-
-    return loss.item() / target_length
-
-
-def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
-    """
-    Insert your description here.  
     
-    **Parameters**:  
+    # Clip gradients
+    encoder_grad_norm = nn.utils.clip_grad_norm(encoder.parameters(), opts.max_grad_norm)
+    decoder_grad_norm = nn.utils.clip_grad_norm(decoder.parameters(), opts.max_grad_norm)
+    clipped_encoder_grad_norm = compute_grad_norm(encoder.parameters())
+    clipped_decoder_grad_norm = compute_grad_norm(decoder.parameters())
     
-    - *param1* (type):  
-    
-    **Input**:  
-    
-    - Input 1: [shapes]  
-    
-    **Output**:  
-    
-    - Output 1: [shapes]  
-    """
-    with torch.no_grad():
-        input_tensor = tensorFromSentence(input_lang, sentence)
-        input_length = input_tensor.size()[0]
-        encoder_hidden = encoder.initHidden()
+    # Update parameters with optimizers
+    encoder_optim.step()
+    decoder_optim.step()
+        
+    return loss.data[0], pred_seqs, attention_weights, num_corrects, num_words,\
+           encoder_grad_norm, decoder_grad_norm, clipped_encoder_grad_norm, clipped_decoder_grad_norm
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
-
-        for ei in range(input_length):
-            encoder_output, encoder_hidden = encoder(input_tensor[ei],
-                                                     encoder_hidden)
-            encoder_outputs[ei] += encoder_output[0, 0]
-
-        decoder_input = torch.tensor([[SOS_token]], device=device)  # SOS
-
-        decoder_hidden = encoder_hidden
-
-        decoded_words = []
-        decoder_attentions = torch.zeros(max_length, max_length)
-
-        for di in range(max_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            decoder_attentions[di] = decoder_attention.data
-            topv, topi = decoder_output.data.topk(1)
-            if topi.item() == EOS_token:
-                decoded_words.append('<EOS>')
-                break
-            else:
-                decoded_words.append(output_lang.index2word[topi.item()])
-
-            decoder_input = topi.squeeze().detach()
-
-        return decoded_words, decoder_attentions[:di + 1]
-
-
-def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
-    """
-    Insert your description here.  
-    
-    **Parameters**:  
-    
-    - *param1* (type):  
-    
-    **Input**:  
-    
-    - Input 1: [shapes]  
-    
-    **Output**:  
-    
-    - Output 1: [shapes]  
-    """
-    start = time.time()
-    plot_losses = []
-    print_loss_total = 0  # Reset every print_every
-    plot_loss_total = 0  # Reset every plot_every
-
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    training_pairs = [tensorsFromPair(random.choice(pairs))
-                      for i in range(n_iters)]
-    criterion = nn.NLLLoss()
-
-    for iter in range(1, n_iters + 1):
-        training_pair = training_pairs[iter - 1]
-        input_tensor = training_pair[0]
-        target_tensor = training_pair[1]
-
-        loss = train(input_tensor, target_tensor, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print_loss_total += loss
-        plot_loss_total += loss
-
-        if iter % print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
-                                         iter, iter / n_iters * 100, print_loss_avg))
-
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
-
-    showPlot(plot_losses)

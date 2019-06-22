@@ -11,19 +11,13 @@ from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
+from core import CITATION_PATTERNS, STOPWORDS, PathOrStr
 
 
 
 logging.basicConfig(level=logging.INFO, style='$')
 
-PathOrStr = Union[Path, str]
-"""Custom type for Paths or pathlike objects."""
 
-CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
-"""Regex patterns for matching citations in document sentences."""
-
-STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
-"""Set of stopwords obtained via spacy."""
 
 
 def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
