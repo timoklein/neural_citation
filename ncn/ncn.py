@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from typing import List
 import logging
 
-from ncn.core import Filters, MAX_LENGTH, DEVICE
+from core import Filters, MAX_LENGTH, DEVICE
 
 class TDNN(nn.Module):
     """

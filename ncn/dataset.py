@@ -3,7 +3,7 @@ import torch
 from tqdm import tqdm
 from collections import Counter, namedtuple
 from torch.utils.data import Dataset, DataLoader
-from ncn.core import PAD, BOS, EOS, UNK
+from core import PAD, BOS, EOS, UNK
 
 
 # TODO: Get this code to work
