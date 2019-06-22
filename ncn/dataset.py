@@ -3,11 +3,8 @@ import torch
 from tqdm import tqdm
 from collections import Counter, namedtuple
 from torch.utils.data import Dataset, DataLoader
+from ncn.core import PAD, BOS, EOS, UNK
 
-PAD = 0
-BOS = 1
-EOS = 2
-UNK = 3
 
 # TODO: Get this code to work
 class AttrDict(dict):

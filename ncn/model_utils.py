@@ -3,7 +3,7 @@ import torch
 from torch.autograd import Variable
 import numpy as np
 from tqdm import tqdm
-from core import PAD, BOS, EOS, UNK
+from ncn.core import PAD, BOS, EOS, UNK
 
 def load_spacy_glove_embedding(spacy_nlp, vocab):
     

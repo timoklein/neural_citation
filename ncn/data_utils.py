@@ -11,7 +11,7 @@ from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
-from core import CITATION_PATTERNS, STOPWORDS, PathOrStr
+from ncn.core import CITATION_PATTERNS, STOPWORDS, PathOrStr
 
 
 

@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
-from core import BOS, EOS, DEVICE
-from model_utils import detach_hidden, masked_cross_entropy
+from ncn.core import BOS, EOS, DEVICE
+from ncn.model_utils import detach_hidden, masked_cross_entropy
 
 
 def compute_grad_norm(parameters, norm_type=2):
