@@ -312,7 +312,24 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
            f"\nUnique cited authors tokens found: {len(cited_counts)}")
     logging.info(msg)
 
+    # augment dataframe with additional data
+    data["context_len"] = data["context"].map(lambda x: len(x))
+    data["title_len"] = data["title_cited"].map(lambda x: len(x))
+    data["num_citing_aut"] = data["authors_citing"].map(lambda x: len(x))
+    data["num_cited_aut"] = data["authors_cited"].map(lambda x: len(x))
+
+    # reset the index to avoid indexing errors
     data.reset_index(drop=True, inplace=True)
+
+    # drop incomplete data
+    empty = pd.Index([])
+    for idx in ["context_len", "title_len", "num_citing_aut", "num_cited_aut"]:
+        empty = empty.union(data[data[idx] == 0].index)
+    data.drop(empty, inplace=True)
+
+    # reset index again
+    data.reset_index(drop=True, inplace=True)
+
     data.to_pickle(path.parent/f"processed_data.pkl", compression=None)
 
 

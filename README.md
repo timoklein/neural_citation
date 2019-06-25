@@ -11,11 +11,13 @@ https://github.com/tebesu/NeuralCitationNetwork.
 
 
 ## Stats  
-* Remove 8260 triplets of paper data due to empty/missing files. 
-* Remove 1 data sample throwing regex error.   
-* Remove 161670 context samples where information was missing/could not be parsed from files.  
-* This leaves 502353 context - citation pairs with full information.  
-* Context vocabulary size after processing: 120767.  
-* Title vocabulary size after processing: 64128.  
-* Number of citing authors: 28582.  
-* Number of cited authors: 174241.  
+
+1. Removed 8260 triplets of paper data due to empty/missing files.  
+2. Removed 1 data sample throwing regex error.  
+3. Removed 161670 context samples where information was missing/could not be parsed from files. 
+4. Removed an additional 61 empty samples after preprocessing.  
+* This leaves __502292 context - citation pairs__ with full information.
+* __Context vocabulary__ size after processing: __120767__.  
+* __Title vocabulary__ size after processing: __64128__.  
+* Number of __citing authors__: __28582__.  
+* Number of __cited authors__: __174241__. 
