@@ -5,6 +5,9 @@ https://github.com/tebesu/NeuralCitationNetwork.
  
 ## Questions
 * Embeddings: Rare words vs common words. How to choose vocab?
+* Choose Max length for all info  
+* How to embed contexts and titles?  
+* Attention decoder help  
 
 
 ## Stats  

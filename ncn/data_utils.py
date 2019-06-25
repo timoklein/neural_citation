@@ -312,6 +312,7 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
            f"\nUnique cited authors tokens found: {len(cited_counts)}")
     logging.info(msg)
 
+    data.reset_index(drop=True, inplace=True)
     data.to_pickle(path.parent/f"processed_data.pkl", compression=None)
 
 
