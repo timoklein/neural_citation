@@ -8,6 +8,7 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Choose Max length for all info  
 * How to embed contexts and titles?  
 * Attention decoder help  
+* We have no preselection algorithm. How to proceeed?    
 
 
 ## Stats  
