@@ -12,6 +12,13 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Paperformat ACM template.  
 
 
+## TODOs
+* Get Attention Decoder to work (Timo)  
+* Convert Data into word vectors, build author embeddings (Timo)  
+* Implement Bucketting (Timo)  
+* Write theory (Joan)  
+* Implement BM-25 (Joan)  
+
 ## Stats  
 
 1. Removed 8260 triplets of paper data due to empty/missing files.  
