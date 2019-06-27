@@ -5,10 +5,11 @@ https://github.com/tebesu/NeuralCitationNetwork.
  
 ## Questions
 * Embeddings: Rare words vs common words. How to choose vocab?
-* Choose Max length for all info  
-* How to embed contexts and titles?  
+* Choose Max length for all info  40 titles, 5 authors  
+* How to embed contexts and titles?  First use Glove pretrained.  
 * Attention decoder help  
-* We have no preselection algorithm. How to proceeed?    
+* We have no preselection algorithm. How to proceeed?  BM-25 or whole test set.  
+* Paperformat ACM template.  
 
 
 ## Stats  
