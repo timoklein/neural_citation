@@ -224,7 +224,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
     - **List of strings**:  List containing the preprocessed tokens.
     """
     text = text.lower().strip()
-    text = re.sub("[" + re.escape(string.punctuation) + "]", "", text)
+    text = re.sub("[" + re.escape(string.punctuation) + "]", " ", text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
     text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
