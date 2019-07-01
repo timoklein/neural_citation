@@ -11,10 +11,13 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * We have no preselection algorithm. How to proceeed?  BM-25 or whole test set.  
 * Paperformat ACM template.  
 
+## Notes
+* Use DataFrame sample to sample batches without replacement.  
+* How to do bucketing this way?  
+* Profile code with cProfile to check whether pandas operations are too costly (probably not)  
 
 ## TODOs
 * Get Attention Decoder to work (Timo)  
-* Convert Data into word vectors, build author embeddings (Timo)  
 * Implement Bucketting (Timo)  
 * Write theory (Joan)  
 * Implement BM-25 (Joan)  
