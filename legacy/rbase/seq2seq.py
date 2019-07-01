@@ -464,6 +464,7 @@ class DeepCNNtoRNN(BaseRNN):
                           for i in tf.split(1, max_decoder_length, self._dec_inputs)]
 
             # Attention States: [batch size, seq length, encoder cell size]
+            # ENCODER OUTPUTS
             attn_states = self._enc_outputs
 
             self._dec_initial_state = self.cell.zero_state(self.config.batch_size, tf.float32)

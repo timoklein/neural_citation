@@ -4,6 +4,8 @@ import logging
 import json
 import string
 import spacy
+import torch
+from torch import Tensor
 from pathlib import Path
 from typing import Union, Collection, List, Dict
 from collections import Counter
@@ -11,6 +13,7 @@ from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
+from gensim.models import KeyedVectors
 from core import CITATION_PATTERNS, STOPWORDS, PathOrStr
 
 
@@ -257,7 +260,7 @@ def author_preprocessing(text: str) -> List[str]:
     return text
 
 
-def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_size: int = 20000) -> None:
+def context_title_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
     """
     Insert your description here.  
     
@@ -273,8 +276,56 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     
     - **Output 1** *(shapes)*:  
     """
-    path = Path(path)
-    data = pd.read_pickle(path)
+    embedding_list = [nlp.vocab.get_vector(token) for token in list_of_tokens if token in nlp.vocab]
+    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
+    return t
+
+
+def author_tensorizer(list_of_tokens: List[str], vecs: KeyedVectors) -> Tensor:
+    """
+    Insert your description here.  
+    
+    ## Parameters:  
+    
+    - **param1** *(type)*:  
+    
+    ## Input:  
+    
+    - **Input 1** *(shapes)*:  
+    
+    ## Output:  
+    
+    - **Output 1** *(shapes)*:  
+    """
+    embedding_list = [vecs.vocab.get_vector(token) for token in list_of_tokens if token in vecs.vocab]
+    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
+    return t
+
+
+def preprocess_dataset(path_to_data: PathOrStr, 
+                       path_to_author_vecs: PathOrStr,
+                       context_title_cols: List[str] = ["context", "title_cited"],
+                       author_cols: List[str] = ["authors_citing", "authors_cited"],
+                       tensorize_data: bool = True) -> None:
+    """
+    Insert your description here.  
+    
+    ## Parameters:  
+    
+    - **param1** *(type)*:  
+    
+    ## Input:  
+    
+    - **Input 1** *(shapes)*:  
+    
+    ## Output:  
+    
+    - **Output 1** *(shapes)*:  
+    """
+    path_to_data = Path(path_to_data)
+    data = pd.read_pickle(path_to_data)
+
+    path_to_author_vecs = Path(path_to_author_vecs)
 
     # prune empty fields
     data = data[(data["title_citing"] != "") & 
@@ -289,7 +340,7 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
 
     preprocessor = partial(title_context_preprocessing, tokenizer=tokenizer)
     # preprocessing steps for contexts and cited titles
-    for col in ["context", "title_cited"]:
+    for col in context_title_cols:
         data[col] = data[col].map(preprocessor)
 
     context_list = [item for sublist in data["context"].values.tolist() for item in sublist]
@@ -301,7 +352,7 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     logging.info(msg)
 
 
-    for col in ["authors_citing", "authors_cited"]:
+    for col in author_cols:
         data[col] = data[col].map(author_preprocessing)
 
     citing_list = [item for sublist in data["authors_citing"].values.tolist() for item in sublist]
@@ -318,6 +369,18 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     data["num_citing_aut"] = data["authors_citing"].map(lambda x: len(x))
     data["num_cited_aut"] = data["authors_cited"].map(lambda x: len(x))
 
+    # embed data and convert into tensors if specified
+    if tensorize_data:
+        author_vecs = KeyedVectors.load(path_to_author_vecs)
+
+        preprocessor = partial(context_title_tensorizer, nlp=nlp)
+        for col in context_title_cols:
+            data[col] = data[col].map(preprocessor)
+        
+        preprocessor = partial(author_tensorizer, vecs= author_vecs)
+        for col in author_cols:
+            data[col] = data[col].map(preprocessor)
+
     # reset the index to avoid indexing errors
     data.reset_index(drop=True, inplace=True)
 
@@ -330,7 +393,7 @@ def preprocess_dataset(path: PathOrStr, vocab_size: int = 30000, author_vocab_si
     # reset index again
     data.reset_index(drop=True, inplace=True)
 
-    data.to_pickle(path.parent/f"processed_data.pkl", compression=None)
+    data.to_pickle(path_to_data.parent/f"processed_data.pkl", compression=None)
 
 
 
