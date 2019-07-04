@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from typing import List
 import logging
 
-from core import Filters, MAX_LENGTH, DEVICE
+from core import Filters, MAX_LENGTH
 
 class TDNN(nn.Module):
     """
@@ -20,17 +20,20 @@ class TDNN(nn.Module):
     - **num_filters** *(int=64)*: Number of convolutional filters  
     """
 
-    def __init__(self, filter_size: int, embed_size: int, num_filters: int = 64):
+    def __init__(self, filter_size: int, 
+                       embed_size: int, 
+                       num_filters: int = 64):
         super().__init__()
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
-        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size))
+        # no bias to avoid accumulating biases on padding
+        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size,filter_size), bias=False)
         self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
         """
         ## Input:  
 
-        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:  
+        - **Tensor** *(L: sequence length, N: batch size, D: embedding dimensions)*:  
             Input sequence.
 
         ## Output:  
@@ -38,6 +41,8 @@ class TDNN(nn.Module):
         - **Tensor** *(batch_size, num_filters)*:  
             Output sequence. 
         """
+        # [L: seq length, N: batch size, D embedding dimensions] -> [N: batch size, D embedding dimensions, L: seq length]
+        x = torch.einsum("ijk -> jki", x)
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
         x = x.unsqueeze(1)
 
@@ -108,159 +113,136 @@ class TDNNEncoder(nn.Module):
         return x.view(-1, len(self.filter_list), self.num_filters)
 
 
-
-# TODO: Debug this
-# TODO: Get this to work with batches
-
-class AttentionDecoderRNN(nn.Module):
-    def __init__(self, encoder, embedding=None, attention=True, bias=True, tie_embeddings=False, dropout=0.3):
-        """ General attention in `Effective Approaches to Attention-based Neural Machine Translation`
-            Ref: https://arxiv.org/abs/1508.04025
-            
-            Share input and output embeddings:
-            Ref:
-                - "Using the Output Embedding to Improve Language Models" (Press & Wolf 2016)
-                   https://arxiv.org/abs/1608.05859
-                - "Tying Word Vectors and Word Classifiers: A Loss Framework for Language Modeling" (Inan et al. 2016)
-                   https://arxiv.org/abs/1611.01462
-        """
+# TODO: Fix this to work with model
+class Attention(nn.Module):
+    def __init__(self, enc_hid_dim, dec_hid_dim):
         super().__init__()
         
-        self.hidden_size = encoder.hidden_size * encoder.num_directions
-        self.num_layers = encoder.num_layers
-        self.dropout = dropout
-        self.embedding = embedding
-        self.attention = attention
-        self.tie_embeddings = tie_embeddings
+        self.enc_hid_dim = enc_hid_dim
+        self.dec_hid_dim = dec_hid_dim
         
-        self.vocab_size = self.embedding.num_embeddings
-        self.word_vec_size = self.embedding.embedding_dim
+        self.attn = nn.Linear((enc_hid_dim * 2) + dec_hid_dim, dec_hid_dim)
+        self.v = nn.Parameter(torch.rand(dec_hid_dim))
         
-        self.rnn_type = encoder.rnn_type
-        self.rnn = getattr(nn, self.rnn_type)(
-                            input_size=self.word_vec_size,
-                            hidden_size=self.hidden_size,
-                            num_layers=self.num_layers,
-                            dropout=self.dropout)
+    def forward(self, hidden, encoder_outputs, mask):
         
-        if self.attention:
-            self.W_a = nn.Linear(encoder.hidden_size * encoder.num_directions,
-                                 self.hidden_size, bias=bias)
-            self.W_c = nn.Linear(encoder.hidden_size * encoder.num_directions + self.hidden_size, 
-                                 self.hidden_size, bias=bias)
+        #hidden = [batch size, dec hid dim]
+        #encoder_outputs = [src sent len, batch size, enc hid dim * 2]
+        #mask = [batch size, src sent len]
         
-        if self.tie_embeddings:
-            self.W_proj = nn.Linear(self.hidden_size, self.word_vec_size, bias=bias)
-            self.W_s = nn.Linear(self.word_vec_size, self.vocab_size, bias=bias)
-            self.W_s.weight = self.embedding.weight
-        else:
-            self.W_s = nn.Linear(self.hidden_size, self.vocab_size, bias=bias)
+        batch_size = encoder_outputs.shape[1]
+        src_len = encoder_outputs.shape[0]
         
-    def forward(self, input_seq, decoder_hidden, encoder_outputs, src_lens):
-        """ Args:
-            - input_seq      : (batch_size)
-            - decoder_hidden : (t=0) last encoder hidden state (num_layers * num_directions, batch_size, hidden_size) 
-                               (t>0) previous decoder hidden state (num_layers, batch_size, hidden_size)
-            - encoder_outputs: (max_src_len, batch_size, hidden_size * num_directions)
+        #repeat encoder hidden state src_len times
+        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
         
-            Returns:
-            - output           : (batch_size, vocab_size)
-            - decoder_hidden   : (num_layers, batch_size, hidden_size)
-            - attention_weights: (batch_size, max_src_len)
-        """        
-        # (batch_size) => (seq_len=1, batch_size)
-        input_seq = input_seq.unsqueeze(0)
+        encoder_outputs = encoder_outputs.permute(1, 0, 2)
         
-        # (seq_len=1, batch_size) => (seq_len=1, batch_size, word_vec_size) 
-        emb = self.embedding(input_seq)
+        #hidden = [batch size, src sent len, dec hid dim]
+        #encoder_outputs = [batch size, src sent len, enc hid dim * 2]
         
-        # rnn returns:
-        # - decoder_output: (seq_len=1, batch_size, hidden_size)
-        # - decoder_hidden: (num_layers, batch_size, hidden_size)
-        decoder_output, decoder_hidden = self.rnn(emb, decoder_hidden)
-
-        # (seq_len=1, batch_size, hidden_size) => (batch_size, seq_len=1, hidden_size)
-        decoder_output = decoder_output.transpose(0,1)
+        energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
         
-        """ 
-        ------------------------------------------------------------------------------------------
-        Notes of computing attention scores
-        ------------------------------------------------------------------------------------------
-        # For-loop version:
-
-        max_src_len = encoder_outputs.size(0)
-        batch_size = encoder_outputs.size(1)
-        attention_scores = Variable(torch.zeros(batch_size, max_src_len))
-
-        # For every batch, every time step of encoder's hidden state, calculate attention score.
-        for b in range(batch_size):
-            for t in range(max_src_len):
-                # Loung. eq(8) -- general form content-based attention:
-                attention_scores[b,t] = decoder_output[b].dot(attention.W_a(encoder_outputs[t,b]))
-
-        ------------------------------------------------------------------------------------------
-        # Vectorized version:
-
-        1. decoder_output: (batch_size, seq_len=1, hidden_size)
-        2. encoder_outputs: (max_src_len, batch_size, hidden_size * num_directions)
-        3. W_a(encoder_outputs): (max_src_len, batch_size, hidden_size)
-                        .transpose(0,1)  : (batch_size, max_src_len, hidden_size) 
-                        .transpose(1,2)  : (batch_size, hidden_size, max_src_len)
-        4. attention_scores: 
-                        (batch_size, seq_len=1, hidden_size) * (batch_size, hidden_size, max_src_len) 
-                        => (batch_size, seq_len=1, max_src_len)
-        """
+        #energy = [batch size, src sent len, dec hid dim]
+                
+        energy = energy.permute(0, 2, 1)
         
-        if self.attention:
-            # attention_scores: (batch_size, seq_len=1, max_src_len)
-            attention_scores = torch.bmm(decoder_output, self.W_a(encoder_outputs).transpose(0,1).transpose(1,2))
-
-            # attention_mask: (batch_size, seq_len=1, max_src_len)
-            attention_mask = sequence_mask(src_lens).unsqueeze(1)
-
-            # Fills elements of tensor with `-float('inf')` where `mask` is 1.
-            attention_scores.data.masked_fill_(1 - attention_mask.data, -float('inf'))
-
-            # attention_weights: (batch_size, seq_len=1, max_src_len) => (batch_size, max_src_len) for `F.softmax` 
-            # => (batch_size, seq_len=1, max_src_len)
-            try: # torch 0.3.x
-                attention_weights = F.softmax(attention_scores.squeeze(1), dim=1).unsqueeze(1)
-            except:
-                attention_weights = F.softmax(attention_scores.squeeze(1)).unsqueeze(1)
-
-            # context_vector:
-            # (batch_size, seq_len=1, max_src_len) * (batch_size, max_src_len, encoder_hidden_size * num_directions)
-            # => (batch_size, seq_len=1, encoder_hidden_size * num_directions)
-            context_vector = torch.bmm(attention_weights, encoder_outputs.transpose(0,1))
-
-            # concat_input: (batch_size, seq_len=1, encoder_hidden_size * num_directions + decoder_hidden_size)
-            concat_input = torch.cat([context_vector, decoder_output], -1)
-
-            # (batch_size, seq_len=1, encoder_hidden_size * num_directions + decoder_hidden_size) => (batch_size, seq_len=1, decoder_hidden_size)
-            concat_output = F.tanh(self.W_c(concat_input))
+        #energy = [batch size, dec hid dim, src sent len]
+        
+        #v = [dec hid dim]
+        
+        v = self.v.repeat(batch_size, 1).unsqueeze(1)
+        
+        #v = [batch size, 1, dec hid dim]
             
-            # Prepare returns:
-            # (batch_size, seq_len=1, max_src_len) => (batch_size, max_src_len)
-            attention_weights = attention_weights.squeeze(1)
-        else:
-            attention_weights = None
-            concat_output = decoder_output
+        attention = torch.bmm(v, energy).squeeze(1)
         
-        # If input and output embeddings are tied,
-        # project `decoder_hidden_size` to `word_vec_size`.
-        if self.tie_embeddings:
-            output = self.W_s(self.W_proj(concat_output))
-        else:
-            # (batch_size, seq_len=1, decoder_hidden_size) => (batch_size, seq_len=1, vocab_size)
-            output = self.W_s(concat_output)    
+        #attention = [batch size, src sent len]
         
-        # Prepare returns:
-        # (batch_size, seq_len=1, vocab_size) => (batch_size, vocab_size)
-        output = output.squeeze(1)
+        attention = attention.masked_fill(mask == 0, -1e10)
         
-        del src_lens
+        return F.softmax(attention, dim = 1)
+
+
+# TODO: Fix this to work with model
+class Decoder(nn.Module):
+    def __init__(self, output_dim, emb_dim, enc_hid_dim, dec_hid_dim, dropout, attention):
+        super().__init__()
+
+        self.emb_dim = emb_dim
+        self.enc_hid_dim = enc_hid_dim
+        self.dec_hid_dim = dec_hid_dim
+        self.output_dim = output_dim
+        self.dropout = dropout
+        self.attention = attention
         
-        return output, decoder_hidden, attention_weights
+        self.embedding = nn.Embedding(output_dim, emb_dim)
+        
+        self.rnn = nn.GRU((enc_hid_dim * 2) + emb_dim, dec_hid_dim)
+        
+        self.out = nn.Linear((enc_hid_dim * 2) + dec_hid_dim + emb_dim, output_dim)
+        
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, input, hidden, encoder_outputs, mask):
+             
+        #input = [batch size]
+        #hidden = [batch size, dec hid dim]
+        #encoder_outputs = [src sent len, batch size, enc hid dim * 2]
+        #mask = [batch size, src sent len]
+        
+        input = input.unsqueeze(0)
+        
+        #input = [1, batch size]
+        
+        embedded = self.dropout(self.embedding(input))
+        
+        #embedded = [1, batch size, emb dim]
+        
+        a = self.attention(hidden, encoder_outputs, mask)
+                
+        #a = [batch size, src sent len]
+        
+        a = a.unsqueeze(1)
+        
+        #a = [batch size, 1, src sent len]
+        
+        encoder_outputs = encoder_outputs.permute(1, 0, 2)
+        
+        #encoder_outputs = [batch size, src sent len, enc hid dim * 2]
+        
+        weighted = torch.bmm(a, encoder_outputs)
+        
+        #weighted = [batch size, 1, enc hid dim * 2]
+        
+        weighted = weighted.permute(1, 0, 2)
+        
+        #weighted = [1, batch size, enc hid dim * 2]
+        
+        rnn_input = torch.cat((embedded, weighted), dim = 2)
+        
+        #rnn_input = [1, batch size, (enc hid dim * 2) + emb dim]
+            
+        output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
+        
+        #output = [sent len, batch size, dec hid dim * n directions]
+        #hidden = [n layers * n directions, batch size, dec hid dim]
+        
+        #sent len, n layers and n directions will always be 1 in this decoder, therefore:
+        #output = [1, batch size, dec hid dim]
+        #hidden = [1, batch size, dec hid dim]
+        #this also means that output == hidden
+        assert (output == hidden).all()
+        
+        embedded = embedded.squeeze(0)
+        output = output.squeeze(0)
+        weighted = weighted.squeeze(0)
+        
+        output = self.out(torch.cat((output, weighted, embedded), dim = 1))
+        
+        #output = [bsz, output dim]
+        
+        return output, hidden.squeeze(0), a.squeeze(1)
 
 
 # TODO: Debug this
@@ -284,46 +266,73 @@ class NCN(nn.Module):
     """
     def __init__(self, context_filters: Filters,
                        author_filters: Filters,
-                       vocab_size: int,
+                       context_vocab_size: int,
+                       title_vocab_size: int,
                        author_vocab_size: int,
-                       num_filters: int = 64,
+                       pad_idx: int,
+                       sos_idx: int,
+                       eos_idx: int,
+                       num_filters: int = 128,
                        authors: bool = False, 
-                       embed_size: int = 64,
+                       embed_size: int = 128,
                        num_layers: int = 1,
-                       hidden_dims: int = 64,
+                       hidden_dims: int = 128,
                        batch_size: int = 32,
-                       dropout_p: float = 0.2):
+                       dropout_p: float = 0.3):
         super().__init__()
+
 
         self.use_authors = authors
         self.context_filter_list = context_filters
         self.author_filter_list = author_filters
         self.num_filters = num_filters # num filters for context == num filters for authors
+
+        self.embed_size = embed_size
+        self.context_vocab_size = context_vocab_size
+        self.title_vocab_size = title_vocab_size
+        self.author_vocab_size = author_vocab_size
+        self.pad_idx = pad_idx
+        self.sos_idx = sos_idx
+        self.eos_idx = eos_idx
+
+        self.hidden_dims = hidden_dims
+        self.num_layers = num_layers
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.bs = batch_size
         self._batched = self.bs > 1
-        self.vocab_size = vocab_size
-        self.author_vocab_size = author_vocab_size
         self.dropout_p = dropout_p
 
+
+        # sanity check
+        msg = (f"# Filters={self.num_filters}, Hidden dimension={self.hidden_dims}, Embedding dimension={self.embed_size}"
+               f"\nThese don't match!")
+        assert self.num_filters == self.hidden_dims == self.embed_size, msg
+
         # ncn logging stuff
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("NCN")
         self.logger.setLevel(logging.INFO)
 
-        self.context_embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        #---------------------------------------------------------------------------------------------------------------
+        # NCN MODEL
+        self.dropout = nn.Dropout(self.dropout_p)
 
         # context encoder
+        self.context_embedding = nn.Embedding(self.context_vocab_size, self.embed_size, padding_idx=self.pad_idx)
         self.context_encoder = TDNNEncoder(self.context_filter_list, self.num_filters, embed_size, self.bs)
 
+        # author encoder
         if self.use_authors:
-            self.author_embedding = nn.Embedding(self.author_vocab_size, self.embed_size)
+            self.author_embedding = nn.Embedding(self.author_vocab_size, self.embed_size, padding_idx=self.pad_idx)
 
             self.citing_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
             self.cited_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
 
-        
-        self.title_embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        # decoder
+        self.title_embedding = nn.Embedding(self.title_vocab_size, self.embed_size, padding_idx=self.pad_idx)
 
         # TODO: Instantiate Decoder
+
 
     def forward(self, context, title, hidden, authors_citing=None, authors_cited=None):
         """
@@ -338,18 +347,15 @@ class NCN(nn.Module):
         """
 
         # Embed and encode context
-        context = self.context_embedding(context).view(1, 1, -1)
-        context = self.dropout(context)
+        context = self.dropout(self.context_embedding(context))
         context = self.context_encoder(context)
 
         if self.use_authors and authors_citing is not None and authors_cited is not None:
             self.logger.info("Using Author information")
 
             # Embed authors in shared space
-            authors_citing = self.author_embedding(authors_citing).view(1, 1, -1)
-            authors_citing = self.dropout(authors_citing)
-            authors_cited = self.author_embedding(authors_cited).view(1, 1, -1)
-            authors_cited = self.dropout(authors_cited)
+            authors_citing = self.dropout(self.author_embedding(authors_citing))
+            authors_cited = self.dropout(self.author_embedding(authors_cited))
 
             # Encode author information and concatenate
             authors_citing = self.citing_author_encoder(authors_citing)
@@ -357,8 +363,7 @@ class NCN(nn.Module):
             cat_encodings = torch.cat([context, authors_citing, authors_cited], dim=1)
         
         # Embed title
-        title = self.title_embedding(title).view(1, 1, -1)
-        title = self.dropout(title)
+        title = self.dropout(self.title_embedding(title))
         
 
     

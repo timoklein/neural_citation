@@ -14,7 +14,7 @@ from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from gensim.models import KeyedVectors
-from core import CITATION_PATTERNS, STOPWORDS, PathOrStr
+from core import CITATION_PATTERNS, STOPWORDS, MAX_SEQ_LENGTH, MAX_AUTHORS, PathOrStr
 
 
 
@@ -227,12 +227,17 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
     - **List of strings**:  List containing the preprocessed tokens.
     """
     text = text.lower().strip()
+    text = re.sub("\d*?", '', text)
     text = re.sub("[" + re.escape(string.punctuation) + "]", " ", text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
     text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
-    
-    return text
+
+    # return the sequence up to max length or totally if shorter
+    try:
+        return text[:MAX_SEQ_LENGTH]
+    except IndexError:
+        return text
 
 
 def author_preprocessing(text: str) -> List[str]:
@@ -257,10 +262,15 @@ def author_preprocessing(text: str) -> List[str]:
     text = re.sub("\d*?", '', text)
     text = text.lower().split(',')
     text = [token.strip() for token in text if token.strip()]
-    return text
+
+    # return the sequence up to max length or totally if shorter
+    try:
+        return text[:MAX_AUTHORS]
+    except IndexError:
+        return text
 
 
-def context_title_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
+def context_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
     """
     Insert your description here.  
     
@@ -281,9 +291,10 @@ def context_title_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.Engli
     return t
 
 
-def author_tensorizer(list_of_tokens: List[str], vecs: KeyedVectors) -> Tensor:
+def context_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
     """
-    Insert your description here.  
+    Converts context sequences into Tensors ready for CNN consumption.  
+    The sequence will be truncated/padded to length 40.   
     
     ## Parameters:  
     
@@ -295,7 +306,27 @@ def author_tensorizer(list_of_tokens: List[str], vecs: KeyedVectors) -> Tensor:
     
     ## Output:  
     
-    - **Output 1** *(shapes)*:  
+    - **Tensor** *(shapes)*:  
+    """
+    embedding_list = [nlp.vocab.get_vector(token) for token in list_of_tokens if token in nlp.vocab]
+    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
+    return t
+
+
+def author_tensorizer(list_of_tokens: List[str], vecs: KeyedVectors) -> Tensor:
+    """
+    Takes a list of author names and embeds them using a trained gensim KeyedVectors model.  
+    The sequence will be truncated/padded to length 5. 
+    
+    ## Parameters:  
+    
+    - **list_of_tokens** *(List[str])*: A list of string tokens each representing an author.  
+    - **vecs** *(Keyedvectors)*: Gensim KeyedVectors object containing trained author embeddings.
+    
+    
+    ## Output:  
+    
+    - **Tensor** *(shapes)*:  
     """
     embedding_list = [vecs.vocab.get_vector(token) for token in list_of_tokens if token in vecs.vocab]
     t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
@@ -371,11 +402,10 @@ def preprocess_dataset(path_to_data: PathOrStr,
 
     # embed data and convert into tensors if specified
     if tensorize_data:
-        author_vecs = KeyedVectors.load(path_to_author_vecs)
+        author_vecs = KeyedVectors.load(str(path_to_author_vecs))
 
-        preprocessor = partial(context_title_tensorizer, nlp=nlp)
-        for col in context_title_cols:
-            data[col] = data[col].map(preprocessor)
+        preprocessor = partial(context_tensorizer, nlp=nlp)
+        data["context"] = data["context"].map(preprocessor)
         
         preprocessor = partial(author_tensorizer, vecs= author_vecs)
         for col in author_cols:
@@ -401,4 +431,5 @@ if __name__ == '__main__':
     # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
     # prepare_data(path_to_data)
     path_to_df = "/home/timo/DataSets/KD_arxiv_CS/arxiv_data.pkl"
-    preprocess_dataset(path_to_df)
+    path_to_aut_vecs = "/home/timo/DataSets/KD_arxiv_CS/embeddings/author_vecs.vec"
+    preprocess_dataset(path_to_df, path_to_aut_vecs, tensorize_data=False)

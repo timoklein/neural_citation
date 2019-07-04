@@ -21,8 +21,11 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
 """Set of stopwords obtained via spacy."""
 
-MAX_LENGTH = 20
+MAX_SEQ_LENGTH = 40
 """Maximum decoder sequence length. Determines the number of attention weights."""
+
+MAX_AUTHORS = 5
+"""Maximum number of authors considered"""
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 """Check for a GPU globally."""
