@@ -5,6 +5,9 @@ from typing import List
 import logging
 
 from core import Filters, MAX_LENGTH
+import logging_setup
+
+logger = logging.getLogger("neural_citation.ncn")
 
 class TDNN(nn.Module):
     """
@@ -308,10 +311,6 @@ class NCN(nn.Module):
         msg = (f"# Filters={self.num_filters}, Hidden dimension={self.hidden_dims}, Embedding dimension={self.embed_size}"
                f"\nThese don't match!")
         assert self.num_filters == self.hidden_dims == self.embed_size, msg
-
-        # ncn logging stuff
-        self.logger = logging.getLogger("NCN")
-        self.logger.setLevel(logging.INFO)
 
         #---------------------------------------------------------------------------------------------------------------
         # NCN MODEL

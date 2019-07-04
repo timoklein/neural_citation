@@ -13,14 +13,13 @@ from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
-from gensim.models import KeyedVectors
+
 from core import CITATION_PATTERNS, STOPWORDS, MAX_SEQ_LENGTH, MAX_AUTHORS, PathOrStr
+import logging_setup
 
 
 
-logging.basicConfig(level=logging.INFO, style='$')
-
-
+logger = logging.getLogger("neural_citation.data")
 
 
 def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:
@@ -98,9 +97,9 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
                                 "authors_cited": authors}
                         samples.append(pd.DataFrame(sample, index=[0]))
                 except:
-                    logging.info('!'*30)
-                    logging.info(f"Found erroneous ref at {textpath.stem}")
-                    logging.info(ref)
+                    logger.info('!'*30)
+                    logger.info(f"Found erroneous ref at {textpath.stem}")
+                    logger.info(ref)
     return samples
 
 
@@ -126,7 +125,7 @@ def clean_incomplete_data(path: PathOrStr) -> None:
 
         if ( not metapath.exists() ) or ( not refpath.exists() ):
             incomplete_paths += 1
-            logging.info(f"Found incomplete file: {textpath.stem}")
+            logger.info(f"Found incomplete file: {textpath.stem}")
             textpath.unlink()
             try:
                 metapath.unlink()
@@ -146,14 +145,14 @@ def clean_incomplete_data(path: PathOrStr) -> None:
 
             if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
                 empty_files += 1
-                logging.info(f"Found empty file: {textpath.stem}")
+                logger.info(f"Found empty file: {textpath.stem}")
                 textpath.unlink()
                 metapath.unlink()
                 refpath.unlink()
     
     message = (f"Incomplete paths(not all files present): {incomplete_paths} out of {no_files}"
                 f"\nAt least one empty file: {empty_files} out of {no_files}")
-    logging.info(message)
+    logger.info(message)
 
 
 def prepare_data(path: PathOrStr) -> None:
@@ -174,12 +173,12 @@ def prepare_data(path: PathOrStr) -> None:
     data = []
 
     no_total = len(list(path.glob("*.txt")))
-    logging.info('-'*30)
-    logging.info(f"Total number of files to process: {no_total}")
-    logging.info('-'*30)
+    logger.info('-'*30)
+    logger.info(f"Total number of files to process: {no_total}")
+    logger.info('-'*30)
 
     for i, textpath in enumerate(path.glob("*.txt")):
-        if i % 100 == 0: logging.info(f"Processing file {i} of {no_total}...")
+        if i % 100 == 0: logger.info(f"Processing file {i} of {no_total}...")
         
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
@@ -291,53 +290,9 @@ def context_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) ->
     return t
 
 
-def context_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
-    """
-    Converts context sequences into Tensors ready for CNN consumption.  
-    The sequence will be truncated/padded to length 40.   
-    
-    ## Parameters:  
-    
-    - **param1** *(type)*:  
-    
-    ## Input:  
-    
-    - **Input 1** *(shapes)*:  
-    
-    ## Output:  
-    
-    - **Tensor** *(shapes)*:  
-    """
-    embedding_list = [nlp.vocab.get_vector(token) for token in list_of_tokens if token in nlp.vocab]
-    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
-    return t
-
-
-def author_tensorizer(list_of_tokens: List[str], vecs: KeyedVectors) -> Tensor:
-    """
-    Takes a list of author names and embeds them using a trained gensim KeyedVectors model.  
-    The sequence will be truncated/padded to length 5. 
-    
-    ## Parameters:  
-    
-    - **list_of_tokens** *(List[str])*: A list of string tokens each representing an author.  
-    - **vecs** *(Keyedvectors)*: Gensim KeyedVectors object containing trained author embeddings.
-    
-    
-    ## Output:  
-    
-    - **Tensor** *(shapes)*:  
-    """
-    embedding_list = [vecs.vocab.get_vector(token) for token in list_of_tokens if token in vecs.vocab]
-    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
-    return t
-
-
 def preprocess_dataset(path_to_data: PathOrStr, 
-                       path_to_author_vecs: PathOrStr,
                        context_title_cols: List[str] = ["context", "title_cited"],
-                       author_cols: List[str] = ["authors_citing", "authors_cited"],
-                       tensorize_data: bool = True) -> None:
+                       author_cols: List[str] = ["authors_citing", "authors_cited"]) -> None:
     """
     Insert your description here.  
     
@@ -380,7 +335,7 @@ def preprocess_dataset(path_to_data: PathOrStr,
     title_counts = Counter(title_list)
     msg = (f"Unique context tokens found: {len(context_counts)}"
            f"\nUnique title tokens found: {len(title_counts)}")
-    logging.info(msg)
+    logger.info(msg)
 
 
     for col in author_cols:
@@ -392,24 +347,13 @@ def preprocess_dataset(path_to_data: PathOrStr,
     cited_counts = Counter(cited_list)
     msg = (f"Unique citing authors tokens found: {len(citing_counts)}"
            f"\nUnique cited authors tokens found: {len(cited_counts)}")
-    logging.info(msg)
+    logger.info(msg)
 
     # augment dataframe with additional data
     data["context_len"] = data["context"].map(lambda x: len(x))
     data["title_len"] = data["title_cited"].map(lambda x: len(x))
     data["num_citing_aut"] = data["authors_citing"].map(lambda x: len(x))
     data["num_cited_aut"] = data["authors_cited"].map(lambda x: len(x))
-
-    # embed data and convert into tensors if specified
-    if tensorize_data:
-        author_vecs = KeyedVectors.load(str(path_to_author_vecs))
-
-        preprocessor = partial(context_tensorizer, nlp=nlp)
-        data["context"] = data["context"].map(preprocessor)
-        
-        preprocessor = partial(author_tensorizer, vecs= author_vecs)
-        for col in author_cols:
-            data[col] = data[col].map(preprocessor)
 
     # reset the index to avoid indexing errors
     data.reset_index(drop=True, inplace=True)
