@@ -14,7 +14,7 @@ from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 
-from core import CITATION_PATTERNS, STOPWORDS, MAX_SEQ_LENGTH, MAX_AUTHORS, PathOrStr
+from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, PathOrStr
 import logging_setup
 
 
@@ -203,11 +203,12 @@ def prepare_data(path: PathOrStr) -> None:
     dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
 
 
-def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
+def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
 
-    1. Lowercase.  
+    1. Lowercase and strip.  
+    2. Replace digits
     2. Remove all punctuation.  
     3. Tokenize.  
     4. Remove numbers.  
@@ -233,10 +234,19 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer) -> List[str]:
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
-    try:
-        return text[:MAX_SEQ_LENGTH]
-    except IndexError:
-        return text
+    # max length depends on the type of processed text
+    if identifier == "context":
+        try:
+            return text[:MAX_CONTEXT_LENGTH]
+        except IndexError:
+            return text
+    elif identifier == "title_cited":
+        try:
+            return text[:MAX_TITLE_LENGTH]
+        except IndexError:
+            return text
+    else:
+        raise NameError("Identifier name could not be found.")
 
 
 def author_preprocessing(text: str) -> List[str]:
@@ -246,7 +256,7 @@ def author_preprocessing(text: str) -> List[str]:
     
     1. Remove all numbers.  
     2. Lowercase.  
-    3. Split at each comma.  
+    3. Tokenize.  
     4. Remove blanks.  
     5. Strip whitespace.  
     
@@ -267,27 +277,6 @@ def author_preprocessing(text: str) -> List[str]:
         return text[:MAX_AUTHORS]
     except IndexError:
         return text
-
-
-def context_tensorizer(list_of_tokens: List[str], nlp: spacy.lang.en.English) -> Tensor:
-    """
-    Insert your description here.  
-    
-    ## Parameters:  
-    
-    - **param1** *(type)*:  
-    
-    ## Input:  
-    
-    - **Input 1** *(shapes)*:  
-    
-    ## Output:  
-    
-    - **Output 1** *(shapes)*:  
-    """
-    embedding_list = [nlp.vocab.get_vector(token) for token in list_of_tokens if token in nlp.vocab]
-    t = torch.cat([torch.from_numpy(embd).unsqueeze(0) for embd in embedding_list], dim=0)
-    return t
 
 
 def preprocess_dataset(path_to_data: PathOrStr, 
@@ -311,8 +300,6 @@ def preprocess_dataset(path_to_data: PathOrStr,
     path_to_data = Path(path_to_data)
     data = pd.read_pickle(path_to_data)
 
-    path_to_author_vecs = Path(path_to_author_vecs)
-
     # prune empty fields
     data = data[(data["title_citing"] != "") & 
                 (data["context"] != "") & 
@@ -324,9 +311,9 @@ def preprocess_dataset(path_to_data: PathOrStr,
     nlp = spacy.load("en_core_web_lg")
     tokenizer = Tokenizer(nlp.vocab)
 
-    preprocessor = partial(title_context_preprocessing, tokenizer=tokenizer)
     # preprocessing steps for contexts and cited titles
     for col in context_title_cols:
+        preprocessor = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=col)
         data[col] = data[col].map(preprocessor)
 
     context_list = [item for sublist in data["context"].values.tolist() for item in sublist]
@@ -366,14 +353,16 @@ def preprocess_dataset(path_to_data: PathOrStr,
 
     # reset index again
     data.reset_index(drop=True, inplace=True)
+    savedir = path_to_data.parent/f"processed_data.csv"
+    data.to_csv(savedir, compression=None, index_label=False)
+    logger.info(f"Data has been saved to: {savedir}.")
 
-    data.to_pickle(path_to_data.parent/f"processed_data.pkl", compression=None)
 
-
+def generate_bucketized_data():
+    pass
 
 if __name__ == '__main__':
     # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
     # prepare_data(path_to_data)
     path_to_df = "/home/timo/DataSets/KD_arxiv_CS/arxiv_data.pkl"
-    path_to_aut_vecs = "/home/timo/DataSets/KD_arxiv_CS/embeddings/author_vecs.vec"
-    preprocess_dataset(path_to_df, path_to_aut_vecs, tensorize_data=False)
+    preprocess_dataset(path_to_df)

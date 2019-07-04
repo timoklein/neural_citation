@@ -29,7 +29,7 @@ https://github.com/tebesu/NeuralCitationNetwork.
 3. Removed 161670 context samples where information was missing/could not be parsed from files. 
 4. Removed an additional 61 empty samples after preprocessing.  
 * This leaves __502292 context - citation pairs__ with full information.
-* __Context vocabulary__ size after processing: __75027__.  
-* __Title vocabulary__ size after processing: __44206__.  
-* Number of __citing authors__: __28582__.  
-* Number of __cited authors__: __174241__. 
+* __Context vocabulary__ size after processing: __72046__.  
+* __Title vocabulary__ size after processing: __43208__.  
+* Number of __citing authors__: __28200__.  
+* Number of __cited authors__: __169236__. 
