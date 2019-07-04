@@ -90,11 +90,10 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
                         title = ''.join(title).strip(',')
                         
                         # generate sample in correct format
-                        sample = {"title_citing": meta["title"],
-                                "context": re.sub(CITATION_PATTERNS, '', sentence),
-                                "authors_citing": ','.join(meta["authors"]),
-                                "title_cited": title,
-                                "authors_cited": authors}
+                        sample = {"context": re.sub(CITATION_PATTERNS, '', sentence),
+                                  "authors_citing": ','.join(meta["authors"]),
+                                  "title_cited": title,
+                                  "authors_cited": authors}
                         samples.append(pd.DataFrame(sample, index=[0]))
                 except:
                     logger.info('!'*30)
@@ -198,11 +197,20 @@ def prepare_data(path: PathOrStr) -> None:
 
 
     dataset = pd.concat(data, axis=0)
+
+    # prune empty fields
+    dataset = dataset[(dataset["context"] != "") & 
+                      (dataset["authors_citing"] != "") & 
+                      (dataset["title_cited"] != "") & 
+                      (dataset["authors_cited"] != "")]
+
     dataset.reset_index(inplace=True)
     dataset.drop("index", axis=1, inplace=True)
-    dataset.to_pickle(save_dir/f"arxiv_data.pkl", compression=None)
+    save_path = save_dir/f"arxiv_data.csv"
+    dataset.to_csv(save_path, compression=None, index=False, index_label=False)
+    logger.info(f"Dataset with {len(dataset)} samples has been saved to: {save_path}.")
 
-
+# TODO: Join both again with comma before returning
 def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
@@ -248,7 +256,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str)
     else:
         raise NameError("Identifier name could not be found.")
 
-
+# TODO: Join both again with comma before returning
 def author_preprocessing(text: str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
@@ -281,7 +289,8 @@ def author_preprocessing(text: str) -> List[str]:
 
 def preprocess_dataset(path_to_data: PathOrStr, 
                        context_title_cols: List[str] = ["context", "title_cited"],
-                       author_cols: List[str] = ["authors_citing", "authors_cited"]) -> None:
+                       author_cols: List[str] = ["authors_citing", "authors_cited"],
+                       drop_lengths: bool = True) -> None:
     """
     Insert your description here.  
     
@@ -299,13 +308,6 @@ def preprocess_dataset(path_to_data: PathOrStr,
     """
     path_to_data = Path(path_to_data)
     data = pd.read_pickle(path_to_data)
-
-    # prune empty fields
-    data = data[(data["title_citing"] != "") & 
-                (data["context"] != "") & 
-                (data["authors_citing"] != "") & 
-                (data["title_cited"] != "") & 
-                (data["authors_cited"] != "")]
     
     # instantiate spacy model and preprocessers
     nlp = spacy.load("en_core_web_lg")
@@ -351,18 +353,27 @@ def preprocess_dataset(path_to_data: PathOrStr,
         empty = empty.union(data[data[idx] == 0].index)
     data.drop(empty, inplace=True)
 
+    # drop columns not needed for further processing
+    if drop_lengths:
+        data.drop(["title_citing","context_len", "title_len", "num_citing_aut", "num_cited_aut"], axis=1, inplace=True)
+
     # reset index again
     data.reset_index(drop=True, inplace=True)
-    savedir = path_to_data.parent/f"processed_data.csv"
+    save_path = path_to_data.parent/f"processed_data.csv"
     data.to_csv(savedir, compression=None, index_label=False)
-    logger.info(f"Data has been saved to: {savedir}.")
+    logger.info(f"Data has been saved to: {save_path}.")
 
 
 def generate_bucketized_data():
+
+    # return bucketiterators for all data
+    # return fields
+    # return info dict
     pass
 
 if __name__ == '__main__':
-    # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
-    # prepare_data(path_to_data)
-    path_to_df = "/home/timo/DataSets/KD_arxiv_CS/arxiv_data.pkl"
-    preprocess_dataset(path_to_df)
+    path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
+    clean_incomplete_data(path_to_data)
+    prepare_data(path_to_data)
+    # path_to_df = "/home/timo/DataSets/KD_arxiv_CS/arxiv_data.pkl"
+    # preprocess_dataset(path_to_df)
