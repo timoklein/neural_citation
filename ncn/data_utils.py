@@ -208,7 +208,7 @@ def prepare_data(path: PathOrStr) -> None:
     dataset.to_csv(save_path, compression=None, index=False, index_label=False)
     logger.info(f"Dataset with {len(dataset)} samples has been saved to: {save_path}.")
 
-# TODO: Join both again with comma before returning
+
 def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
@@ -232,11 +232,9 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str)
     
     - **List of strings**:  List containing the preprocessed tokens.
     """
-    text = text.lower().strip()
     text = re.sub("\d*?", '', text)
     text = re.sub("[" + re.escape(string.punctuation) + "]", " ", text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
-    text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
@@ -254,7 +252,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str)
     else:
         raise NameError("Identifier name could not be found.")
 
-# TODO: Join both again with comma before returning
+
 def author_preprocessing(text: str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
@@ -275,7 +273,7 @@ def author_preprocessing(text: str) -> List[str]:
     - **List of strings**:  List containing the preprocessed author tokens. 
     """
     text = re.sub("\d*?", '', text)
-    text = text.lower().split(',')
+    text = text.split(',')
     text = [token.strip() for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
