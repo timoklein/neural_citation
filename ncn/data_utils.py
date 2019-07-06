@@ -11,8 +11,10 @@ from functools import partial
 from pandas import DataFrame
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
+from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
-from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, PathOrStr
+from core import PathOrStr, TrainingData
+from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
 import logging_setup
 
 
@@ -212,15 +214,13 @@ def prepare_data(path: PathOrStr) -> None:
 def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
-
-    1. Lowercase and strip.  
-    2. Replace digits
+ 
+    1. Replace digits
     2. Remove all punctuation.  
     3. Tokenize.  
     4. Remove numbers.  
-    5. Lemmatize.  
-    6. Remove stopwords.  
-    7. Remove blanks
+    5. Lemmatize.   
+    6. Remove blanks
   
     
     ## Parameters:  
@@ -258,11 +258,9 @@ def author_preprocessing(text: str) -> List[str]:
     Applies the following preprocessing steps on a string:  
 
     
-    1. Remove all numbers.  
-    2. Lowercase.  
-    3. Tokenize.  
-    4. Remove blanks.  
-    5. Strip whitespace.  
+    1. Remove all numbers.   
+    2. Tokenize.  
+    3. Remove blanks.   
     
     ## Parameters:  
     
@@ -283,10 +281,7 @@ def author_preprocessing(text: str) -> List[str]:
         return text
 
 
-def preprocess_dataset(path_to_data: PathOrStr, 
-                       context_title_cols: List[str] = ["context", "title_cited"],
-                       author_cols: List[str] = ["authors_citing", "authors_cited"],
-                       drop_lengths: bool = True) -> None:
+def generate_data_fields():
     """
     Insert your description here.  
     
@@ -302,74 +297,70 @@ def preprocess_dataset(path_to_data: PathOrStr,
     
     - **Output 1** *(shapes)*:  
     """
-    path_to_data = Path(path_to_data)
-    data = pd.read_pickle(path_to_data)
-    
-    # instantiate spacy model and preprocessers
+    # prepare tokenization functions
     nlp = spacy.load("en_core_web_lg")
     tokenizer = Tokenizer(nlp.vocab)
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="context")
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="title_cited")
 
-    # preprocessing steps for contexts and cited titles
-    for col in context_title_cols:
-        preprocessor = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=col)
-        data[col] = data[col].map(preprocessor)
+    # instantiate fields preprocessing the relevant data
+    TTL = Field(tokenize=ttl_tokenizer, 
+                init_token = '<sos>', 
+                eos_token = '<eos>',
+                lower=True,
+                stop_words=STOPWORDS,
+                include_lengths=True,
+                batch_first=True)
+    AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
+    CNTXT = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
 
-    context_list = [item for sublist in data["context"].values.tolist() for item in sublist]
-    title_list = [item for sublist in data["title_cited"].values.tolist() for item in sublist]
-    context_counts = Counter(context_list)
-    title_counts = Counter(title_list)
-    msg = (f"Unique context tokens found: {len(context_counts)}"
-           f"\nUnique title tokens found: {len(title_counts)}")
-    logger.info(msg)
-
-
-    for col in author_cols:
-        data[col] = data[col].map(author_preprocessing)
-
-    citing_list = [item for sublist in data["authors_citing"].values.tolist() for item in sublist]
-    cited_list = [item for sublist in data["authors_cited"].values.tolist() for item in sublist]
-    citing_counts = Counter(citing_list)
-    cited_counts = Counter(cited_list)
-    msg = (f"Unique citing authors tokens found: {len(citing_counts)}"
-           f"\nUnique cited authors tokens found: {len(cited_counts)}")
-    logger.info(msg)
-
-    # augment dataframe with additional data
-    data["context_len"] = data["context"].map(lambda x: len(x))
-    data["title_len"] = data["title_cited"].map(lambda x: len(x))
-    data["num_citing_aut"] = data["authors_citing"].map(lambda x: len(x))
-    data["num_cited_aut"] = data["authors_cited"].map(lambda x: len(x))
-
-    # reset the index to avoid indexing errors
-    data.reset_index(drop=True, inplace=True)
-
-    # drop incomplete data
-    empty = pd.Index([])
-    for idx in ["context_len", "title_len", "num_citing_aut", "num_cited_aut"]:
-        empty = empty.union(data[data[idx] == 0].index)
-    data.drop(empty, inplace=True)
-
-    # drop columns not needed for further processing
-    if drop_lengths:
-        data.drop(["title_citing","context_len", "title_len", "num_citing_aut", "num_cited_aut"], axis=1, inplace=True)
-
-    # reset index again
-    data.reset_index(drop=True, inplace=True)
-    save_path = path_to_data.parent/f"processed_data.csv"
-    data.to_csv(savedir, compression=None, index_label=False)
-    logger.info(f"Data has been saved to: {save_path}.")
+    return CNTXT, TTL, AUT
 
 
-def generate_bucketized_data():
+def generate_bucketized_iterators(path_to_data: PathOrStr,
+                                  CNTXT: Field,
+                                  TTL: Field,
+                                  AUT: Field) -> TrainingData:
+    """
+    Insert your description here.  
+    
+    ## Parameters:  
+    
+    - **param1** *(type)*:  
+    
+    ## Input:  
+    
+    - **Input 1** *(shapes)*:  
+    
+    ## Output:  
+    
+    - **Output 1** *(shapes)*:  
+    """
+    # generate torchtext dataset from a .csv given the fields for each datatype
+    dataset = TabularDataset(str(path_to_data), "CSV", 
+                       [("context", CNTXT), ("authors_citing", AUT), ("title_cited", TTL), ("authors_cited", AUT)],
+                       skip_header=True)
 
-    # return bucketiterators for all data
-    # return fields
-    # return info dict
-    pass
+    # build field vocab before splitting data
+    TTL.build_vocab(dataset, max_size=30000)
+    AUT.build_vocab(dataset, max_size=30000)
+    CNTXT.build_vocab(dataset, max_size=30000)
 
+    # split dataset
+    train, test, valid = dataset.split([0.7,0.2,0.1])
+
+    # create bucketted iterators for each dataset
+    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((train, test, valid), 
+                                                                          batch_size = 32,
+                                                                          sort_within_batch = True,
+                                                                          sort_key = lambda x : len(x.title_cited))
+    
+    return TrainingData(CNTXT, TTL, AUT, train_iterator, valid_iterator, test_iterator)
+
+    
 if __name__ == '__main__':
-    path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
-    clean_incomplete_data(path_to_data)
-    prepare_data(path_to_data)
-    # path_to_df = "/home/timo/DataSets/KD_arxiv_CS/arxiv_data.pkl"
-    # preprocess_dataset(path_to_df)
+    # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
+    # clean_incomplete_data(path_to_data)
+    # prepare_data(path_to_data)
+    CNTXT, TTL, AUT = generate_data_fields()
+    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv", CNTXT=CNTXT, TTL=TTL, AUT=AUT)
