@@ -45,7 +45,7 @@ class TDNN(nn.Module):
             Output sequence. 
         """
         # [N: batch size, L: seq length, D embedding dimensions] -> [N: batch size, D embedding dimensions, L: seq length]
-        x = torch.einsum("ijk -> ikj", x)
+        x = x.permute(0, 2, 1)
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
         x = x.unsqueeze(1)
 
@@ -58,7 +58,7 @@ class TDNN(nn.Module):
         x = F.max_pool2d(x, kernel_size=pool_size)
 
         # output shape: batch_size, 1, num_filters, 1
-        return torch.einsum("nchw -> nhcw", x)
+        return x.permute(0, 2, 1, 3)
 
 
 class TDNNEncoder(nn.Module):
