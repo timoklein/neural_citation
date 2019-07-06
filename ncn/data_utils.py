@@ -4,8 +4,6 @@ import logging
 import json
 import string
 import spacy
-import torch
-from torch import Tensor
 from pathlib import Path
 from typing import Union, Collection, List, Dict
 from collections import Counter

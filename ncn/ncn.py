@@ -29,7 +29,7 @@ class TDNN(nn.Module):
         super().__init__()
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         # no bias to avoid accumulating biases on padding
-        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size,filter_size), bias=False)
+        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=False)
         self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
@@ -44,8 +44,8 @@ class TDNN(nn.Module):
         - **Tensor** *(batch_size, num_filters)*:  
             Output sequence. 
         """
-        # [L: seq length, N: batch size, D embedding dimensions] -> [N: batch size, D embedding dimensions, L: seq length]
-        x = torch.einsum("ijk -> jki", x)
+        # [N: batch size, L: seq length, D embedding dimensions] -> [N: batch size, D embedding dimensions, L: seq length]
+        x = torch.einsum("ijk -> ikj", x)
         # output shape: [N: batch size, 1: channels, D: embedding dimensions, L: sequence length]
         x = x.unsqueeze(1)
 
@@ -100,7 +100,6 @@ class TDNNEncoder(nn.Module):
         - **Tensor** *(batch_size, number of filter sizes, num_filters)*:
             Output sequence.
         """
-        # output: List of tensors w. shape: batch size, 1, num_filters, 1
         x = [encoder(x) for encoder in self.encoder]
 
         # output shape: batch_size, list_length, num_filters
@@ -333,7 +332,7 @@ class NCN(nn.Module):
         # TODO: Instantiate Decoder
 
 
-    def forward(self, context, title, hidden, authors_citing=None, authors_cited=None):
+    def forward(self, context, title, hidden=None, authors_citing=None, authors_cited=None):
         """
         ## Inputs:  
     
@@ -350,7 +349,7 @@ class NCN(nn.Module):
         context = self.context_encoder(context)
 
         if self.use_authors and authors_citing is not None and authors_cited is not None:
-            self.logger.info("Using Author information")
+            logger.info("Using Author information")
 
             # Embed authors in shared space
             authors_citing = self.dropout(self.author_embedding(authors_citing))
@@ -359,10 +358,9 @@ class NCN(nn.Module):
             # Encode author information and concatenate
             authors_citing = self.citing_author_encoder(authors_citing)
             authors_cited = self.cited_author_encoder(authors_cited)
+            # [N: batch_size, F: total # of filters (authors, cntxt), D: embedding size]
             cat_encodings = torch.cat([context, authors_citing, authors_cited], dim=1)
         
         # Embed title
         title = self.dropout(self.title_embedding(title))
-        
-
     
