@@ -309,7 +309,6 @@ def generate_data_fields():
                 eos_token = '<eos>',
                 lower=True,
                 stop_words=STOPWORDS,
-                include_lengths=True,
                 batch_first=True)
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
     CNTXT = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
