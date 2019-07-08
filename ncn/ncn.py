@@ -161,89 +161,11 @@ class Attention(nn.Module):
         return torch.softmax(attention, dim=1)
 
 
-# TODO: Fix this to work with model
-class Decoder(nn.Module):
-    def __init__(self, output_dim, emb_dim, enc_hid_dim, dec_hid_dim, dropout, attention):
-        super().__init__()
-
-        self.emb_dim = emb_dim
-        self.enc_hid_dim = enc_hid_dim
-        self.dec_hid_dim = dec_hid_dim
-        self.output_dim = output_dim
-        self.dropout = dropout
-        self.attention = attention
-        
-        self.embedding = nn.Embedding(output_dim, emb_dim)
-        
-        self.rnn = nn.GRU((enc_hid_dim * 2) + emb_dim, dec_hid_dim)
-        
-        self.out = nn.Linear((enc_hid_dim * 2) + dec_hid_dim + emb_dim, output_dim)
-        
-        self.dropout = nn.Dropout(dropout)
-        
-    def forward(self, input, hidden, encoder_outputs, mask):
-             
-        #input = [batch size]
-        #hidden = [batch size, dec hid dim]
-        #encoder_outputs = [src sent len, batch size, enc hid dim * 2]
-        #mask = [batch size, src sent len]
-        
-        input = input.unsqueeze(0)
-        
-        #input = [1, batch size]
-        
-        embedded = self.dropout(self.embedding(input))
-        
-        #embedded = [1, batch size, emb dim]
-        
-        a = self.attention(hidden, encoder_outputs, mask)
-                
-        #a = [batch size, src sent len]
-        
-        a = a.unsqueeze(1)
-        
-        #a = [batch size, 1, src sent len]
-        
-        encoder_outputs = encoder_outputs.permute(1, 0, 2)
-        
-        #encoder_outputs = [batch size, src sent len, enc hid dim * 2]
-        
-        weighted = torch.bmm(a, encoder_outputs)
-        
-        #weighted = [batch size, 1, enc hid dim * 2]
-        
-        weighted = weighted.permute(1, 0, 2)
-        
-        #weighted = [1, batch size, enc hid dim * 2]
-        
-        rnn_input = torch.cat((embedded, weighted), dim = 2)
-        
-        #rnn_input = [1, batch size, (enc hid dim * 2) + emb dim]
-            
-        output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
-        
-        #output = [sent len, batch size, dec hid dim * n directions]
-        #hidden = [n layers * n directions, batch size, dec hid dim]
-        
-        #sent len, n layers and n directions will always be 1 in this decoder, therefore:
-        #output = [1, batch size, dec hid dim]
-        #hidden = [1, batch size, dec hid dim]
-        #this also means that output == hidden
-        assert (output == hidden).all()
-        
-        embedded = embedded.squeeze(0)
-        output = output.squeeze(0)
-        weighted = weighted.squeeze(0)
-        
-        output = self.out(torch.cat((output, weighted, embedded), dim = 1))
-        
-        #output = [bsz, output dim]
-        
-        return output, hidden.squeeze(0), a.squeeze(1)
+# TODO: Implement Decoder architecture
 
 
-# TODO: Debug this
-# TODO: Get this to work with batches
+
+
 class NCN(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
@@ -267,8 +189,6 @@ class NCN(nn.Module):
                        title_vocab_size: int,
                        author_vocab_size: int,
                        pad_idx: int,
-                       sos_idx: int,
-                       eos_idx: int,
                        num_filters: int = 128,
                        authors: bool = False, 
                        embed_size: int = 128,
@@ -289,8 +209,6 @@ class NCN(nn.Module):
         self.title_vocab_size = title_vocab_size
         self.author_vocab_size = author_vocab_size
         self.pad_idx = pad_idx
-        self.sos_idx = sos_idx
-        self.eos_idx = eos_idx
 
         self.hidden_dims = hidden_dims
         self.num_layers = num_layers
