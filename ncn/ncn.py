@@ -292,7 +292,7 @@ class NCN(nn.Module):
                        num_layers: int = 1,
                        hidden_size: int = 128,
                        batch_size: int = 32,
-                       dropout_p: float = 0.3):
+                       dropout_p: float = 0.8):
         super().__init__()
 
 

@@ -98,7 +98,7 @@ def evaluate(model, iterator, criterion):
     return epoch_loss / len(iterator)
 
 
-def train_ncn(n_epochs: int = 10, clip: int = 1):
+def train_ncn(n_epochs: int = 10, clip: int = 5):
     best_valid_loss = float('inf')
 
     for epoch in range(n_epochs):
@@ -127,4 +127,10 @@ if __name__ == '__main__':
     torch.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
 
+    # set up training
+    PAD_IDX = TRG.vocab.stoi['<pad>']
+    optimizer = optim.Adam(ncn.parameters())
+    criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX) 
+
+    train_ncn()
 
