@@ -6,8 +6,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from core import Filters, MAX_LENGTH
-import logging_setup
+import core
+from core import Filters
 
 logger = logging.getLogger("neural_citation.ncn")
 
@@ -399,3 +399,4 @@ class NCN(nn.Module):
             output = (title[t] if teacher_force else top1)
 
         return outputs
+

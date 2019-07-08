@@ -13,9 +13,9 @@ from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
+import core
 from core import PathOrStr, TrainingData
 from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
-import logging_setup
 
 
 
@@ -312,7 +312,7 @@ def generate_data_fields():
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTX = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+    CNTXT = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
 
     return CNTXT, TTL, AUT
 
@@ -337,10 +337,12 @@ def generate_bucketized_iterators(path_to_data: PathOrStr,
     - **Output 1** *(shapes)*:  
     """
     # generate torchtext dataset from a .csv given the fields for each datatype
+    logger.info("Loading dataset...")
     dataset = TabularDataset(str(path_to_data), "CSV", 
                        [("context", CNTXT), ("authors_citing", AUT), ("title_cited", TTL), ("authors_cited", AUT)],
                        skip_header=True)
 
+    logger.info("Building vocab...")
     # build field vocab before splitting data
     TTL.build_vocab(dataset, max_size=30000)
     AUT.build_vocab(dataset, max_size=30000)
