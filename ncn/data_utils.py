@@ -308,10 +308,11 @@ def generate_data_fields():
                 init_token = '<sos>', 
                 eos_token = '<eos>',
                 lower=True,
-                stop_words=STOPWORDS,
-                batch_first=True)
+                stop_words=STOPWORDS)
+
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
-    CNTXT = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+
+    CNTX = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
 
     return CNTXT, TTL, AUT
 
