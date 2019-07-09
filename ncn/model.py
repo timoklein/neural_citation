@@ -329,7 +329,6 @@ class NeuralCitationNetwork(nn.Module):
 
         # author encoder
         if self.use_authors:
-            logger.info("Using Author information.")
             self.author_embedding = nn.Embedding(self.author_vocab_size, self.embed_size, padding_idx=self.pad_idx)
 
             self.citing_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)

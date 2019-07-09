@@ -22,11 +22,12 @@ logger = logging.getLogger("neural_citation.train")
 
 
 def init_weights(m):
-    for name, param in m.named_parameters():
-        if 'weight' in name:
-            nn.init.normal_(param.data, mean=0, std=0.01)
-        else:
-            nn.init.constant_(param.data, 0)
+    if isinstance(m, nn.Conv2d):
+        torch.nn.init.kaiming_normal_(m.weight, a=0, nonlinearity="relu")
+    if isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
+        torch.nn.init.orthogonal_(m.weight)
+    else:
+        torch.nn.init.xavier_normal_(m.weight)
 
 
 def train(model, iterator, optimizer, criterion, clip):
@@ -140,9 +141,10 @@ if __name__ == '__main__':
     ttl_vocab_len = len(data.ttl.vocab)
     
 
-    ncn = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
+    net = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
                                 authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
                                 title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX)
+    net.apply(init_weights)
 
-    train_ncn(ncn, data.train_iter, data.valid_iter)
+    train_ncn(net, data.train_iter, data.valid_iter)
 
