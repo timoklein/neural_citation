@@ -11,6 +11,7 @@ from core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
+# TODO: Batchnorm before or after pooling?
 class TDNN(nn.Module):
     """
     Single TDNN Block for the neural citation network.
@@ -53,7 +54,7 @@ class TDNN(nn.Module):
 
 
         # output shape: batch_size, num_filters, 1, f(seq length)
-        x = F.relu(self.bn(self.conv(x)))
+        x = self.bn(F.relu(self.conv(x)))
         pool_size = x.shape[-1]
 
         # output shape: batch_size, num_filters, 1, 1
@@ -62,7 +63,7 @@ class TDNN(nn.Module):
         # output shape: batch_size, 1, num_filters, 1
         return x.permute(0, 2, 1, 3)
 
-
+# TODO: Batchnorm after tanh?
 class TDNNEncoder(nn.Module):
     """
     Encoder Module based on the TDNN architecture.
