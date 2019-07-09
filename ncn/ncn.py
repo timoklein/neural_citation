@@ -7,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 
 import core
-from core import Filters
+from core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
@@ -287,7 +287,7 @@ class NCN(nn.Module):
                        author_vocab_size: int,
                        pad_idx: int,
                        num_filters: int = 128,
-                       authors: bool = False, 
+                       authors: bool = True, 
                        embed_size: int = 128,
                        num_layers: int = 1,
                        hidden_size: int = 128,
@@ -313,7 +313,6 @@ class NCN(nn.Module):
         self.bs = batch_size
         self._batched = self.bs > 1
         self.dropout_p = dropout_p
-
 
         # sanity check
         msg = (f"# Filters={self.num_filters}, Hidden dimension={self.hidden_size}, Embedding dimension={self.embed_size}"
@@ -345,6 +344,22 @@ class NCN(nn.Module):
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
                                attention = self.attention)
+        
+
+        settings = (f"INITIALIZING NEURAL CITATION NETWORK WITH AUTHORS = {self.use_authors}"
+                    f"\nRunning on: {DEVICE}"
+                    f"\nNumber of model parameters: {self.count_parameters()}"
+                    f"\nEncoders: # Filters = {self.num_filters}, "
+                        f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
+                    f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
+                        f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
+                    f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+                    f"\nParameters: Batch size = {self.bs}, Dropout = {self.dropout_p}"
+                    "\n--------------------------")
+        
+        logger.info(settings)
+
+    def count_parameters(self): return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def forward(self, context, title, hidden=None, authors_citing=None, authors_cited=None,
                teacher_forcing_ratio=1):

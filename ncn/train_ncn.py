@@ -1,6 +1,7 @@
 import math
 import time
 import random
+from pathlib import Path
 
 
 import torch
@@ -10,7 +11,9 @@ import torch.nn.functional as F
 from torchvision import transforms as T
 
 import core
-from core import DEVICE, SEED
+from core import DEVICE, SEED, PathOrStr
+from data_utils import generate_bucketized_iterators
+from ncn import NCN
 
 logger = logging.getLogger("neural_citation.train")
 
@@ -98,7 +101,7 @@ def evaluate(model, iterator, criterion):
     return epoch_loss / len(iterator)
 
 
-def train_ncn(n_epochs: int = 10, clip: int = 5):
+def train_ncn(n_epochs: int = 10, clip: int = 5, save_dir: PathOrStr = "./models"):
     best_valid_loss = float('inf')
 
     for epoch in range(n_epochs):
@@ -114,6 +117,7 @@ def train_ncn(n_epochs: int = 10, clip: int = 5):
         
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
+            if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), 'tut3-model.pt')
         
         logger.info(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
@@ -128,9 +132,15 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
 
     # set up training
+    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv")
     PAD_IDX = TRG.vocab.stoi['<pad>']
+    
+
+    ncn = NCN(context_filters=[4,4,5], context_vocab_size=len(CNTX.vocab),
+              authors=True, author_filters=[1,2], author_vocab_size=len(AUT.vocab),
+              title_vocab_size=len(TTL.vocab), pad_idx=1)
     optimizer = optim.Adam(ncn.parameters())
-    criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX) 
+    criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX)
 
     train_ncn()
 

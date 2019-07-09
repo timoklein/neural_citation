@@ -15,7 +15,7 @@ PathOrStr = Union[Path, str]
 Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
-class TrainingData(NamedTuple):
+class Data(NamedTuple):
     """
     Container holding the data needed to train the NCN model. 
     

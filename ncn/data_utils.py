@@ -4,6 +4,7 @@ import logging
 import json
 import string
 import spacy
+from tqdm import tqdm
 from pathlib import Path
 from typing import Union, Collection, List, Dict
 from collections import Counter
@@ -176,8 +177,7 @@ def prepare_data(path: PathOrStr) -> None:
     logger.info(f"Total number of files to process: {no_total}")
     logger.info('-'*30)
 
-    for i, textpath in enumerate(path.glob("*.txt")):
-        if i % 100 == 0: logger.info(f"Processing file {i} of {no_total}...")
+    for textpath in tqdm(path.glob("*.txt")):
         
         metapath = textpath.with_suffix(".meta")
         refpath = textpath.with_suffix(".refs")
@@ -317,10 +317,7 @@ def generate_data_fields():
     return CNTXT, TTL, AUT
 
 
-def generate_bucketized_iterators(path_to_data: PathOrStr,
-                                  CNTXT: Field,
-                                  TTL: Field,
-                                  AUT: Field) -> TrainingData:
+def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
     """
     Insert your description here.  
     
@@ -336,14 +333,18 @@ def generate_bucketized_iterators(path_to_data: PathOrStr,
     
     - **Output 1** *(shapes)*:  
     """
+    logger.info("Getting fields...")
+    CNTXT, TTL, AUT = generate_data_fields()
+
     # generate torchtext dataset from a .csv given the fields for each datatype
+    # has to be single dataset in order to build proper vocabularies
     logger.info("Loading dataset...")
     dataset = TabularDataset(str(path_to_data), "CSV", 
                        [("context", CNTXT), ("authors_citing", AUT), ("title_cited", TTL), ("authors_cited", AUT)],
                        skip_header=True)
 
-    logger.info("Building vocab...")
     # build field vocab before splitting data
+    logger.info("Building vocab...")
     TTL.build_vocab(dataset, max_size=30000)
     AUT.build_vocab(dataset, max_size=30000)
     CNTXT.build_vocab(dataset, max_size=30000)
@@ -357,12 +358,11 @@ def generate_bucketized_iterators(path_to_data: PathOrStr,
                                                                           sort_within_batch = True,
                                                                           sort_key = lambda x : len(x.title_cited))
     
-    return TrainingData(CNTXT, TTL, AUT, train_iterator, valid_iterator, test_iterator)
+    return Data(CNTXT, TTL, AUT, train_iterator, valid_iterator, test_iterator)
 
     
 if __name__ == '__main__':
     # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
     # clean_incomplete_data(path_to_data)
     # prepare_data(path_to_data)
-    CNTXT, TTL, AUT = generate_data_fields()
-    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv", CNTXT=CNTXT, TTL=TTL, AUT=AUT)
+    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv")
