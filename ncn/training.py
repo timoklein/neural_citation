@@ -26,12 +26,14 @@ def init_weights(m):
     if isinstance(m, nn.Conv2d):
         init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
     # TODO: Figure out how to initialize recurrent layers
-    # elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
-    #     init.orthogonal_(m.all_weights)
+    elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
+        for w in m.all_weights:
+            init.orthogonal_(w)
     elif isinstance(m, nn.Linear):
         init.xavier_uniform_(m.weight)
 
-
+# FIXME: properly unpack training data
+# TODO: Document this
 def train(model, iterator, optimizer, criterion, clip):
     
     model.train()
@@ -68,7 +70,8 @@ def train(model, iterator, optimizer, criterion, clip):
         
     return epoch_loss / len(iterator)
 
-
+# FIXME: properly unpack valid data
+# TODO: Document this
 def evaluate(model, iterator, criterion):
     
     model.eval()

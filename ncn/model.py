@@ -116,7 +116,7 @@ class TDNNEncoder(nn.Module):
         # output shape: list_length, batch_size, num_filters
         return x.view(len(self.filter_list), -1, self.num_filters)
 
-
+# TODO: Document this
 class Attention(nn.Module):
     def __init__(self, enc_num_filters: int , dec_hid_dim: int):
         super().__init__()
@@ -167,7 +167,7 @@ class Attention(nn.Module):
         return torch.softmax(attention, dim=1)
 
 
-
+# TODO: Document this
 class Decoder(nn.Module):
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
                  pad_idx: int, dropout_p: int, attention):
@@ -262,7 +262,7 @@ class Decoder(nn.Module):
         
         return output, hidden.squeeze(0)
 
-
+# TODO: Document this
 class NeuralCitationNetwork(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
@@ -292,7 +292,7 @@ class NeuralCitationNetwork(nn.Module):
                        num_layers: int = 1,
                        hidden_size: int = 128,
                        batch_size: int = 32,
-                       dropout_p: float = 0.8):
+                       dropout_p: float = 0.2):
         super().__init__()
 
 

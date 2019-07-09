@@ -11,7 +11,7 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * We have no preselection algorithm. How to proceeed?  BM-25 or whole test set.  
 * Paperformat ACM template.  
 
-## TODOs
+## Tasks
 * Implement training loops (Timo)
 * Train model (Timo)
 * Document code (Timo)
