@@ -94,12 +94,12 @@ class TDNNEncoder(nn.Module):
         """
         ## Input:  
 
-        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:
+        - **Tensor** *(batch size, embedding dimensions, sequence length)*:
             Input sequence.  
 
         ## Output:  
 
-        - **Tensor** *(batch_size, number of filter sizes, num_filters)*:
+        - **Tensor** *(number of filter sizes, batch size, # filters)*:
             Output sequence.
         """
         x = [encoder(x) for encoder in self.encoder]
@@ -116,8 +116,17 @@ class TDNNEncoder(nn.Module):
         # output shape: list_length, batch_size, num_filters
         return x.view(len(self.filter_list), -1, self.num_filters)
 
-# TODO: Document this
+
 class Attention(nn.Module):
+    """
+    Base attention module as published in the paper https://arxiv.org/abs/1409.0473.
+    The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
+    
+    ## Parameters:  
+    
+    - **enc_num_filters** *(int)*: Number of filters used in the encoder.  
+    - **dec_hid_dim** *(int)*: Dimensions of the decoder RNN layer hidden state.   
+    """
     def __init__(self, enc_num_filters: int , dec_hid_dim: int):
         super().__init__()
         
@@ -128,9 +137,18 @@ class Attention(nn.Module):
         self.v = nn.Parameter(torch.rand(dec_hid_dim))
     
     def forward(self, hidden, encoder_outputs):
+        """
+        ## Input:  
         
-        #hidden = [batch size, dec hid dim]
-        #encoder_outputs = [src sent len, batch size, enc hid dim * 2]
+        - **hidden** *(batch_size, dec_hidden_dim)*: Hidden state of the decoder recurrent layer.  
+        - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
+            Encoded context and author information.  
+        
+        ## Output:  
+        
+        - **a** *(batch_size, number of filter sizes)*: 
+            Tensor containing the attention weights for the encoded source data.
+        """
         
         batch_size = encoder_outputs.shape[1]
         src_len = encoder_outputs.shape[0]
@@ -138,39 +156,35 @@ class Attention(nn.Module):
         logger.debug(f"Attention Batch size: {batch_size}")
         logger.debug(f"Attention weights: {src_len}")
         
-        #repeat encoder hidden state src_len times
         hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
-        
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
-        
-        #hidden = [batch size, src sent len, dec hid dim]
-        #encoder_outputs = [batch size, src sent len, enc hid dim * 2]
-        
         energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
         
-        #energy = [batch size, src sent len, dec hid dim]
-        
         energy = energy.permute(0, 2, 1)
-        
-        #energy = [batch size, dec hid dim, src sent len]
-        
-        #v = [dec hid dim]
-        
-        v = self.v.repeat(batch_size, 1).unsqueeze(1)
-        
-        #v = [batch size, 1, dec hid dim]
-                
+        v = self.v.repeat(batch_size, 1).unsqueeze(1)    
         attention = torch.bmm(v, energy).squeeze(1)
-        
-        #attention= [batch size, src len]
         
         return torch.softmax(attention, dim=1)
 
 
 # TODO: Document this
 class Decoder(nn.Module):
+    """
+    Attention decoder for a Seq2Seq model. Uses a GRU layer as recurrent unit.  
+    The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
+    
+    ## Parameters:  
+    
+    - **title_vocab_size** *(int)*: Size of the title vocabulary used in the embedding layer.  
+    - **embed_size** *(int)*: Dimensions of the learned embeddings.  
+    - **enc_num_filters *(int)*: Number of filters used in the TDNN convolution layer.  
+    - **hidden_size** *(int)*: Specifies the dimensions of the hidden GRU layer state.  
+    - **pad_idx** *(int)*: Index used for pad tokens. Will be ignored by the embedding layer.  
+    - **dropout_p** *(float)*: Dropout probability.  
+    - **attention** *(nn.Module)*: Module for computing the attention weights.  
+    """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: int, attention):
+                 pad_idx: int, dropout_p: float, attention: nn.Module):
         super().__init__()
 
         self.embed_size = embed_size
@@ -190,63 +204,47 @@ class Decoder(nn.Module):
     
     
     def init_hidden(self, bs: int):
-         return torch.zeros(bs, self.hidden_size, device=DEVICE)
+        """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
+        return torch.zeros(bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title, hidden, encoder_outputs):
-             
-        #input = [batch size]
-        #hidden = [batch size, dec hid dim]
-        #encoder_outputs = [src sent len, batch size, enc hid dim * 2]
+        """
+        ## Input:  
+        
+        - **title** *(batch size)*: Batch of initial title tokens.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
+            Encoded context and author information. 
+        
+        ## Output:  
+        
+        - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        """
         
         input = title.unsqueeze(0)
         logger.debug(f"Title shape: {title.shape}")
         logger.debug(f"Hidden shape: {hidden.shape}")
         logger.debug(f"Encoder output shape: {encoder_outputs.shape}")
         
-        #input = [1, batch size]
-        
         embedded = self.dropout(self.embedding(input))
         logger.debug(f"Embedded shape: {embedded.shape}")
-        
-        #embedded = [1, batch size, emb dim]
-        
+         
         a = self.attention(hidden, encoder_outputs)
-                
-        #a = [batch size, src len]
-        
         a = a.unsqueeze(1)
         logger.debug(f"Attention output shape: {a.shape}")
         logger.debug(f"Encoder outputs: {encoder_outputs.shape}")
         
-        #a = [batch size, 1, src len]
-        
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
-        
-        #encoder_outputs = [batch size, src sent len, enc hid dim * 2]
-        
         weighted = torch.bmm(a, encoder_outputs)
-        
-        #weighted = [batch size, 1, enc hid dim * 2]
-        
         weighted = weighted.permute(1, 0, 2)
         logger.debug(f"Weighted shape: {weighted.shape}")
         
-        #weighted = [1, batch size, enc hid dim * 2]
-        
         rnn_input = torch.cat((embedded, weighted), dim = 2)
-        logger.debug(f"RNN input shape: {rnn_input.shape}")
-        
-        #rnn_input = [1, batch size, (enc hid dim * 2) + emb dim]
-            
+        logger.debug(f"RNN input shape: {rnn_input.shape}")  
         output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
         
-        #output = [sent len, batch size, dec hid dim * n directions]
-        #hidden = [n layers * n directions, batch size, dec hid dim]
-        
-        #sent len, n layers and n directions will always be 1 in this decoder, therefore:
-        #output = [1, batch size, dec hid dim]
-        #hidden = [1, batch size, dec hid dim]
-        #this also means that output == hidden
+        # sanity check
         assert (output == hidden).all()
         
         embedded = embedded.squeeze(0)
@@ -257,8 +255,6 @@ class Decoder(nn.Module):
         logger.debug(f"Weighted shape: {weighted.shape}")
         
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
-        
-        #output = [bsz, output dim]
         
         return output, hidden.squeeze(0)
 

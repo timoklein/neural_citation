@@ -23,12 +23,16 @@ logger = logging.getLogger("neural_citation.train")
 
 
 def init_weights(m):
+    """
+    Initializes the model layers. Convolutional layers use he-uniform initialization,
+    linear layers use xavier-uniform.  
+    
+    ## Parameters:  
+    
+    - **m** *(nn.Module)*: Layer of the network.   
+    """
     if isinstance(m, nn.Conv2d):
         init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
-    # TODO: Figure out how to initialize recurrent layers
-    # elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
-    #     for w in m.all_weights:
-    #         init.orthogonal_(w)
     elif isinstance(m, nn.Linear):
         init.xavier_uniform_(m.weight)
 
