@@ -16,7 +16,7 @@ from torchtext.data import BucketIterator
 import core
 from core import DEVICE, SEED, PathOrStr
 from data_utils import generate_bucketized_iterators
-from ncn import NCN
+from model import NeuralCitationNetwork
 
 logger = logging.getLogger("neural_citation.train")
 
@@ -140,9 +140,9 @@ if __name__ == '__main__':
     ttl_vocab_len = len(data.ttl.vocab)
     
 
-    ncn = NCN(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
-              authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
-              title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX)
+    ncn = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
+                                authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
+                                title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX)
 
     train_ncn(ncn, data.train_iter, data.valid_iter)
 

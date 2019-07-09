@@ -263,7 +263,7 @@ class Decoder(nn.Module):
         return output, hidden.squeeze(0)
 
 
-class NCN(nn.Module):
+class NeuralCitationNetwork(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
     The original paper can be found here:  
