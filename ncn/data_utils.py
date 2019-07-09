@@ -15,7 +15,7 @@ from spacy.lang.en import English
 from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
 import core
-from core import PathOrStr, TrainingData
+from core import PathOrStr, Data
 from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
 
 
@@ -56,7 +56,7 @@ def process_refs(refs: str, delimiter_patterns: str = "GC|DBLP") -> List[str]:
 
     ## Output:  
 
-    - List citation contexts split at *delimiter*.
+    - List of citation contexts split at *delimiter*.
     """
     refs = re.sub("\n", '', refs)
     return re.split(delimiter_patterns, refs)
@@ -65,6 +65,21 @@ def process_refs(refs: str, delimiter_patterns: str = "GC|DBLP") -> List[str]:
 
 def generate_context_samples(contexts: Collection[str], refs: Collection[str], 
                        meta: Dict[str, str], textpath: Path) -> DataFrame:
+    """
+    Generates citation context samples for a single paper. 
+    The contexts, references and metadata are expected to be passed in tokenized form.   
+    
+    ## Parameters:  
+    
+    - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
+    - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
+    - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    
+    ## Output:  
+    
+    - **samples** *(pandas.DataFrame)*:  All fully extractable context samples.
+        Each sample has to have information for citation context, citing authors, cited authors and cited title.  
+    """
     samples = []
     for sentence in contexts:
         # return a list of all citations in a sentence
@@ -98,7 +113,7 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
                         samples.append(pd.DataFrame(sample, index=[0]))
                 except:
                     logger.info('!'*30)
-                    logger.info(f"Found erroneous ref at {textpath.stem}")
+                    logger.info(f"Found erroneous ref at {textpath.stem}.")
                     logger.info(ref)
     return samples
 
@@ -220,8 +235,8 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str)
     3. Tokenize.  
     4. Remove numbers.  
     5. Lemmatize.   
-    6. Remove blanks
-  
+    6. Remove blanks  
+    7. Prune length to max length (different for contexts and titles)  
     
     ## Parameters:  
     
@@ -260,7 +275,8 @@ def author_preprocessing(text: str) -> List[str]:
     
     1. Remove all numbers.   
     2. Tokenize.  
-    3. Remove blanks.   
+    3. Remove blanks.  
+    4. Prune length to max length. 
     
     ## Parameters:  
     
@@ -283,19 +299,17 @@ def author_preprocessing(text: str) -> List[str]:
 
 def generate_data_fields():
     """
-    Insert your description here.  
-    
-    ## Parameters:  
-    
-    - **param1** *(type)*:  
-    
-    ## Input:  
-    
-    - **Input 1** *(shapes)*:  
+    Initializer for the torchtext Field objects used to numericalize textual data.  
     
     ## Output:  
     
-    - **Output 1** *(shapes)*:  
+    - **CNTXT** *(torchtext.Field)*: Field object for processing context data. Tokenizes data, lowercases,
+        removes stopwords. Numeric data is returned as [batch_size, seq_length] for TDNN consumption.  
+    - **TTL** *(torchtext.Field)*: Field object for processing title data. Tokenizes data, lowercases,
+        removes stopwords. Start and end of sentences are marked with <sos>, <eos> tokens. 
+        Numeric data is returned as [seq_length, batch_size] for Attention Decoder consumption.  
+    - **AUT** *(torchtext.Field)*: Field object for processing author data. Tokenizes data and lowercases.
+        Numeric data is returned as [batch_size, seq_length] for TDNN consumption.     
     """
     # prepare tokenization functions
     nlp = spacy.load("en_core_web_lg")
@@ -312,26 +326,25 @@ def generate_data_fields():
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTXT = Field(tokenize=ttl_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
 
     return CNTXT, TTL, AUT
 
 
 def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
     """
-    Insert your description here.  
+    Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.
+    The vocab of the author, context and title fields is built *on the whole dataset*
+    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits.  
     
     ## Parameters:  
     
-    - **param1** *(type)*:  
-    
-    ## Input:  
-    
-    - **Input 1** *(shapes)*:  
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
     
     ## Output:  
     
-    - **Output 1** *(shapes)*:  
+    - **Training data** *(Data)*:  Container holding CNTXT (Field), TTL (Field), AUT (Field), 
+        train_iterator (BucketIterator), valid_iterator (BucketIterator), test_iterator (BucketIterator) objects.
     """
     logger.info("Getting fields...")
     CNTXT, TTL, AUT = generate_data_fields()
@@ -350,10 +363,10 @@ def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
     CNTXT.build_vocab(dataset, max_size=30000)
 
     # split dataset
-    train, test, valid = dataset.split([0.7,0.2,0.1])
+    train, valid, test = dataset.split([0.7,0.2,0.1])
 
     # create bucketted iterators for each dataset
-    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((train, test, valid), 
+    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((train, valid, test), 
                                                                           batch_size = 32,
                                                                           sort_within_batch = True,
                                                                           sort_key = lambda x : len(x.title_cited))

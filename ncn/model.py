@@ -347,7 +347,7 @@ class NeuralCitationNetwork(nn.Module):
 
         settings = (f"INITIALIZING NEURAL CITATION NETWORK WITH AUTHORS = {self.use_authors}"
                     f"\nRunning on: {DEVICE}"
-                    f"\nNumber of model parameters: {self.count_parameters()}"
+                    f"\nNumber of model parameters: {self.count_parameters():,}"
                     f"\nEncoders: # Filters = {self.num_filters}, "
                         f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
                     f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "

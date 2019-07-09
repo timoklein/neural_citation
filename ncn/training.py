@@ -1,6 +1,7 @@
 import math
 import time
 import random
+import logging
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
@@ -9,7 +10,7 @@ import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
-from torchvision import transforms as T
+import torch.nn.init as init
 from torch.utils.tensorboard import SummaryWriter
 from torchtext.data import BucketIterator
 
@@ -23,11 +24,12 @@ logger = logging.getLogger("neural_citation.train")
 
 def init_weights(m):
     if isinstance(m, nn.Conv2d):
-        torch.nn.init.kaiming_normal_(m.weight, a=0, nonlinearity="relu")
-    if isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
-        torch.nn.init.orthogonal_(m.weight)
-    else:
-        torch.nn.init.xavier_normal_(m.weight)
+        init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
+    # TODO: Figure out how to initialize recurrent layers
+    # elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
+    #     init.orthogonal_(m.all_weights)
+    elif isinstance(m, nn.Linear):
+        init.xavier_uniform_(m.weight)
 
 
 def train(model, iterator, optimizer, criterion, clip):
@@ -102,7 +104,7 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
               n_epochs: int = 10, clip: int = 5, 
               save_dir: PathOrStr = "./models"):
     
-    optimizer = optim.Adam(ncn.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX, reduction="sum")
 
     best_valid_loss = float('inf')
@@ -143,7 +145,7 @@ if __name__ == '__main__':
 
     net = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
                                 authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
-                                title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX)
+                                title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX, num_layers=2)
     net.apply(init_weights)
 
     train_ncn(net, data.train_iter, data.valid_iter)
