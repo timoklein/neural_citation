@@ -26,13 +26,13 @@ def init_weights(m):
     if isinstance(m, nn.Conv2d):
         init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
     # TODO: Figure out how to initialize recurrent layers
-    elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
-        for w in m.all_weights:
-            init.orthogonal_(w)
+    # elif isinstance(m, nn.GRU) or isinstance(m, nn.LSTM):
+    #     for w in m.all_weights:
+    #         init.orthogonal_(w)
     elif isinstance(m, nn.Linear):
         init.xavier_uniform_(m.weight)
 
-# FIXME: properly unpack training data
+
 # TODO: Document this
 def train(model, iterator, optimizer, criterion, clip):
     
@@ -42,23 +42,27 @@ def train(model, iterator, optimizer, criterion, clip):
     
     for i, batch in enumerate(iterator):
         
-        src = batch.src
-        trg = batch.trg
+        # unpack and move to GPU if available
+        cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+        cntxt = cntxt.to(DEVICE)
+        citing = citing.to(DEVICE)
+        ttl = ttl.to(DEVICE)
+        cited = cited.to(DEVICE)
         
         optimizer.zero_grad()
         
-        output = model(src, trg)
+        output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
         
         #trg = [trg sent len, batch size]
         #output = [trg sent len, batch size, output dim]
         
         output = output[1:].view(-1, output.shape[-1])
-        trg = trg[1:].view(-1)
+        ttl = ttl[1:].view(-1)
         
         #trg = [(trg sent len - 1) * batch size]
         #output = [(trg sent len - 1) * batch size, output dim]
         
-        loss = criterion(output, trg)
+        loss = criterion(output, ttl)
         
         loss.backward()
         
@@ -82,21 +86,25 @@ def evaluate(model, iterator, criterion):
     
         for i, batch in enumerate(iterator):
 
-            src = batch.src
-            trg = batch.trg
-
-            output = model(src, trg, 0) #turn off teacher forcing
+                # unpack and move to GPU if available
+            cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+            cntxt = cntxt.to(DEVICE)
+            citing = citing.to(DEVICE)
+            ttl = ttl.to(DEVICE)
+            cited = cited.to(DEVICE)
+            
+            output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
 
             #trg = [trg sent len, batch size]
             #output = [trg sent len, batch size, output dim]
 
             output = output[1:].view(-1, output.shape[-1])
-            trg = trg[1:].view(-1)
+            ttl = ttl[1:].view(-1)
 
             #trg = [(trg sent len - 1) * batch size]
             #output = [(trg sent len - 1) * batch size, output dim]
 
-            loss = criterion(output, trg)
+            loss = criterion(output, ttl)
 
             epoch_loss += loss.item()
         
@@ -149,6 +157,7 @@ if __name__ == '__main__':
     net = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
                                 authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
                                 title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX, num_layers=2)
+    net.to(DEVICE)
     net.apply(init_weights)
 
     train_ncn(net, data.train_iter, data.valid_iter)

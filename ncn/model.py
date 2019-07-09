@@ -360,7 +360,7 @@ class NeuralCitationNetwork(nn.Module):
 
     def count_parameters(self): return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-    def forward(self, context, title, hidden=None, authors_citing=None, authors_cited=None,
+    def forward(self, context, title, authors_citing=None, authors_cited=None,
                teacher_forcing_ratio=1):
         """
         ## Inputs:  
