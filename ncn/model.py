@@ -87,7 +87,7 @@ class TDNNEncoder(nn.Module):
         self.bs = batch_size
         self._num_filters_total = len(filters)*num_filters
 
-        self.encoder = [TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters) 
+        self.encoder = [TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
                                 for f in self.filter_list]
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
 

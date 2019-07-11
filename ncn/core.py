@@ -60,6 +60,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # base logger for the ncn module
-logging.basicConfig(level=logging.DEBUG, style='$')
+logging.basicConfig(level=logging.INFO, style='$')
 logger = logging.getLogger("neural_citation")
 """Base logger for the neural citation package."""
