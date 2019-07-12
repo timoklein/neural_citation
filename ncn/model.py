@@ -128,12 +128,13 @@ class NCNEncoder(nn.Module):
                        embed_size: int,
                        pad_idx: int,
                        batch_size: int,
+                       dropout_p: float,
                        authors: bool):
         super().__init__()
 
         self.use_authors = authors
 
-        self.dropout = nn.Dropout(self.dropout_p)
+        self.dropout = nn.Dropout(dropout_p)
 
         # context encoder
         self.context_embedding = nn.Embedding(context_vocab_size, embed_size, padding_idx=pad_idx)
@@ -323,13 +324,19 @@ class NeuralCitationNetwork(nn.Module):
     https://github.com/tebesu/NeuralCitationNetwork.  
 
     ## Parameters:  
-    
-    - **num_filters** *(int=64)*: Number of filters applied in the TDNN layers of the model.  
-    - **authors** *(bool=False)*: Use additional author information or not.  
-    - **w_emebd_size** *(int=300)*: Input word embedding dimensions.  
-    - **num_layers** *(int=1)*: Number of RNN layers.  
-    - **hidden_dims** *(int=64)*: Dimension of the RNN hidden states.  
+    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
+    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
+    - **author:vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
+    - **pad_idx** *(int)*: Number of filters applied in the TDNN layers of the model.  
+    - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
+    - **authors** *(bool=True)*: Use author information in the encoder.  
+    - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int=2)*: Number of GRU layers.  
+    - **hidden_size** *(int=128)*: Dimension of the GRU hidden states.  
     - **batch_size** *(int=32)*: Training batch size.  
+    - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
     """
     def __init__(self, context_filters: Filters,
                        author_filters: Filters,
@@ -340,7 +347,7 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
-                       num_layers: int = 1,
+                       num_layers: int = 2,
                        hidden_size: int = 128,
                        batch_size: int = 32,
                        dropout_p: float = 0.2):
@@ -375,14 +382,15 @@ class NeuralCitationNetwork(nn.Module):
         
         # Encoder
         self.encoder = NCNEncoder(context_filters = self.context_filter_list,
-                                   author_filters = self.author_filter_list,
-                                   context_vocab_size = self.context_vocab_size,
-                                   author_filter_list = self.author_vocab_size,
-                                   num_filters = self.num_filters,
-                                   embed_size = self.embed_size,
-                                   pad_idx = self.pad_idx,
-                                   batch_size = self.bs,
-                                   authors = self.use_authors)
+                                  author_filters = self.author_filter_list,
+                                  context_vocab_size = self.context_vocab_size,
+                                  author_vocab_size = self.author_vocab_size,
+                                  num_filters = self.num_filters,
+                                  embed_size = self.embed_size,
+                                  pad_idx = self.pad_idx,
+                                  batch_size = self.bs,
+                                  dropout_p= self.dropout_p,
+                                  authors = self.use_authors)
 
         # attention decoder
         self.attention = Attention(self.num_filters , self.hidden_size)
