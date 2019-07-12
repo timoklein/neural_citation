@@ -11,7 +11,7 @@ from core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
-# TODO: Batchnorm before or after pooling?
+
 class TDNN(nn.Module):
     """
     Single TDNN Block for the neural citation network.
@@ -63,7 +63,7 @@ class TDNN(nn.Module):
         # output shape: batch_size, 1, num_filters, 1
         return x.permute(0, 2, 1, 3)
 
-# TODO: Batchnorm after tanh?
+
 class TDNNEncoder(nn.Module):
     """
     Encoder Module based on the TDNN architecture.
@@ -90,6 +90,7 @@ class TDNNEncoder(nn.Module):
         self.encoder = [TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
                                 for f in self.filter_list]
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
+        self.bn = nn.BatchNorm1d(self._num_filters_total)
 
     def forward(self, x):
         """
@@ -112,10 +113,62 @@ class TDNNEncoder(nn.Module):
         x = x.view(self.bs, -1)
 
         # apply nonlinear mapping
-        x = torch.tanh(self.fc(x))
+        x = self.bn(torch.tanh(self.fc(x)))
 
         # output shape: list_length, batch_size, num_filters
         return x.view(len(self.filter_list), -1, self.num_filters)
+
+
+class NCNEncoder(nn.Module):
+    def __init__(self, context_filters: Filters,
+                       author_filters: Filters,
+                       context_vocab_size: int,
+                       author_vocab_size: int,
+                       num_filters: int,
+                       embed_size: int,
+                       pad_idx: int,
+                       batch_size: int,
+                       authors: bool):
+        super().__init__()
+
+        self.use_authors = authors
+
+        self.dropout = nn.Dropout(self.dropout_p)
+
+        # context encoder
+        self.context_embedding = nn.Embedding(context_vocab_size, embed_size, padding_idx=pad_idx)
+        self.context_encoder = TDNNEncoder(context_filters, num_filters, embed_size, batch_size)
+
+        # author encoder
+        if self.use_authors:
+            self.author_embedding = nn.Embedding(author_vocab_size, embed_size, padding_idx=pad_idx)
+
+            self.citing_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size, batch_size)
+            self.cited_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size, batch_size)
+
+    def forward(self, context, authors_citing=None, authors_cited=None):
+        # Embed and encode context
+        context = self.dropout(self.context_embedding(context))
+        context = self.context_encoder(context)
+        logger.debug(f"Context encoding shape: {context.shape}")
+
+        if self.use_authors and authors_citing is not None and authors_cited is not None:
+            logger.debug("Forward pass uses author information.")
+
+            # Embed authors in shared space
+            authors_citing = self.dropout(self.author_embedding(authors_citing))
+            authors_cited = self.dropout(self.author_embedding(authors_cited))
+
+            # Encode author information and concatenate
+            authors_citing = self.citing_author_encoder(authors_citing)
+            authors_cited = self.cited_author_encoder(authors_cited)
+            logger.debug(f"Citing author encoding shape: {authors_citing.shape}")
+            logger.debug(f"Cited author encoding shape: {authors_cited.shape}")
+
+            # [N: batch_size, F: total # of filters (authors, cntxt), D: embedding size]
+            return torch.cat([context, authors_citing, authors_cited], dim=0)
+        
+        return context
 
 
 class Attention(nn.Module):
@@ -260,6 +313,7 @@ class Decoder(nn.Module):
         return output, hidden.squeeze(0)
 
 # TODO: Document this
+# TODO: Create inference pass for NCN
 class NeuralCitationNetwork(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
@@ -318,18 +372,17 @@ class NeuralCitationNetwork(nn.Module):
 
         #---------------------------------------------------------------------------------------------------------------
         # NCN MODEL
-        self.dropout = nn.Dropout(self.dropout_p)
-
-        # context encoder
-        self.context_embedding = nn.Embedding(self.context_vocab_size, self.embed_size, padding_idx=self.pad_idx)
-        self.context_encoder = TDNNEncoder(self.context_filter_list, self.num_filters, embed_size, self.bs)
-
-        # author encoder
-        if self.use_authors:
-            self.author_embedding = nn.Embedding(self.author_vocab_size, self.embed_size, padding_idx=self.pad_idx)
-
-            self.citing_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
-            self.cited_author_encoder = TDNNEncoder(self.author_filter_list, self.num_filters, embed_size, self.bs)
+        
+        # Encoder
+        self.encoder = NCNEncoder(context_filters = self.context_filter_list,
+                                   author_filters = self.author_filter_list,
+                                   context_vocab_size = self.context_vocab_size,
+                                   author_filter_list = self.author_vocab_size,
+                                   num_filters = self.num_filters,
+                                   embed_size = self.embed_size,
+                                   pad_idx = self.pad_idx,
+                                   batch_size = self.bs,
+                                   authors = self.use_authors)
 
         # attention decoder
         self.attention = Attention(self.num_filters , self.hidden_size)
@@ -369,27 +422,8 @@ class NeuralCitationNetwork(nn.Module):
         
         - **Output 1**: *(shapes)* 
         """
-
-        # Embed and encode context
-        context = self.dropout(self.context_embedding(context))
-        context = self.context_encoder(context)
-        logger.debug(f"Context encoding shape: {context.shape}")
-
-        if self.use_authors and authors_citing is not None and authors_cited is not None:
-            logger.debug("Forward pass uses author information.")
-
-            # Embed authors in shared space
-            authors_citing = self.dropout(self.author_embedding(authors_citing))
-            authors_cited = self.dropout(self.author_embedding(authors_cited))
-
-            # Encode author information and concatenate
-            authors_citing = self.citing_author_encoder(authors_citing)
-            authors_cited = self.cited_author_encoder(authors_cited)
-            logger.debug(f"Citing author encoding shape: {authors_citing.shape}")
-            logger.debug(f"Cited author encoding shape: {authors_cited.shape}")
-            # [N: batch_size, F: total # of filters (authors, cntxt), D: embedding size]
-            cat_encodings = torch.cat([context, authors_citing, authors_cited], dim=0)
         
+        encoder_outputs = self.encoder(context, authors_citing, authors_cited)
         
         # maximum title sequence length
         max_len = title.shape[0]
@@ -403,7 +437,7 @@ class NeuralCitationNetwork(nn.Module):
         hidden= self.decoder.init_hidden(self.bs)
         
         for t in range(1, max_len):
-            output, hidden = self.decoder(output, hidden, cat_encodings)
+            output, hidden = self.decoder(output, hidden, encoder_outputs)
             outputs[t] = output
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]

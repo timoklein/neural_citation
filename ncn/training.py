@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
+from typing import Tuple
 
 import torch
 from torch import nn
@@ -35,6 +36,21 @@ def init_weights(m):
         init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
     elif isinstance(m, nn.Linear):
         init.xavier_uniform_(m.weight)
+
+
+def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
+    """
+    Measures the time elapsed between two time stamps.  
+    
+    ## Parameters:  
+    
+    - **start_time** *(float)*: Starting time stamp.  
+    - **end_time** *(float)*: Ending time stamp.  
+    """
+    elapsed_time = end_time - start_time
+    elapsed_mins = int(elapsed_time / 60)
+    elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
+    return elapsed_mins, elapsed_secs
 
 
 # TODO: Document this
@@ -78,7 +94,7 @@ def train(model, iterator, optimizer, criterion, clip):
         
     return epoch_loss / len(iterator)
 
-# FIXME: properly unpack valid data
+
 # TODO: Document this
 def evaluate(model, iterator, criterion):
     
@@ -90,7 +106,7 @@ def evaluate(model, iterator, criterion):
     
         for i, batch in enumerate(iterator):
 
-                # unpack and move to GPU if available
+            # unpack and move to GPU if available
             cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
             cntxt = cntxt.to(DEVICE)
             citing = citing.to(DEVICE)
@@ -117,7 +133,7 @@ def evaluate(model, iterator, criterion):
 
 def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, 
               n_epochs: int = 10, clip: int = 5, 
-              save_dir: PathOrStr = "./models"):
+              save_dir: PathOrStr = "./models") -> None:
     
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX, reduction="sum")
@@ -131,9 +147,14 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
 
     for epoch in range(n_epochs):
         
+        start_time = time.time()
         
         train_loss = train(model, train_iterator, optimizer, criterion, clip)
         valid_loss = evaluate(model, valid_iterator, criterion)
+
+        end_time = time.time()
+
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)#
 
         writer.add_scalar('loss/training', train_loss)
         writer.add_scalar('loss/validation', valid_loss)
@@ -142,6 +163,10 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
             best_valid_loss = valid_loss
             if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
+        
+        print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
+        print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
+        print(f'\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}')
 
 
 if __name__ == '__main__':
