@@ -119,6 +119,7 @@ class TDNNEncoder(nn.Module):
         return x.view(len(self.filter_list), -1, self.num_filters)
 
 
+# TODO: Document this
 class NCNEncoder(nn.Module):
     def __init__(self, context_filters: Filters,
                        author_filters: Filters,
@@ -222,7 +223,7 @@ class Attention(nn.Module):
         return torch.softmax(attention, dim=1)
 
 
-# TODO: Document this
+
 class Decoder(nn.Module):
     """
     Attention decoder for a Seq2Seq model. Uses a GRU layer as recurrent unit.  
@@ -313,7 +314,7 @@ class Decoder(nn.Module):
         
         return output, hidden.squeeze(0)
 
-# TODO: Document this
+
 # TODO: Create inference pass for NCN
 class NeuralCitationNetwork(nn.Module):
     """
