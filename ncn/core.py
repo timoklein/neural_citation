@@ -52,7 +52,7 @@ MAX_CONTEXT_LENGTH = 100
 MAX_AUTHORS = 7
 """Maximum number of authors considered"""
 
-SEED = 34
+SEED = 69
 """RNG seed for reproducability."""
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

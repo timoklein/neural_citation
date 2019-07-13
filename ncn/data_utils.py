@@ -331,6 +331,7 @@ def generate_data_fields():
     return CNTXT, TTL, AUT
 
 
+# TODO: Put dataset generation into seperate class
 def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
     """
     Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.

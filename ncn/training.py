@@ -170,7 +170,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
 
 
 def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
-              n_epochs: int = 10, clip: int = 5, lr: float = 0.01, 
+              n_epochs: int = 20, clip: int = 5, lr: float = 0.001, 
               save_dir: PathOrStr = "./models") -> None:
     """
     Main training function for the NCN model.  
@@ -183,10 +183,13 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
     - **pad** *(int)*: Vocabulary padding index. This index is ignored when calculating the loss.      
     - **n_epochs** *(int=10)*: Number of training epochs.  
     - **clip** *(int=5)*: Apply gradient clipping at the given value.  
-    - **lr** *(float=0.01)*: Learning rate for the optimizer. This function uses Adam to train the model.    
+    - **lr** *(float=0.001)*: Learning rate for the optimizer. This function uses Adam to train the model.    
     - **save_dir** *(PathOrstr='./models')*: Save the model with the lowest validation loss at this path.  
     """
     save_dir = Path(save_dir)
+
+    flag_first_cycle = True
+    flag_second_cycle = True
 
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -210,8 +213,8 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
 
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)#
 
-        writer.add_scalar('loss/training', train_loss)
-        writer.add_scalar('loss/validation', valid_loss)
+        writer.add_scalar('loss/training', train_loss, epoch)
+        writer.add_scalar('loss/validation', valid_loss, epoch)
         
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
@@ -222,9 +225,15 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
         logger.info(f"\tTrain Loss: {train_loss:.3f}")
         logger.info(f"\t Val. Loss: {valid_loss:.3f}")
 
-        if valid_loss < 1260: 
+        if valid_loss < 1260 and flag_first_cycle: 
+            logger.info(f"Decreasing learning rate from {lr} to {lr/10}.")
+            lr /= 10
+            flag_first_cycle = False
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+        elif valid_loss < 1150 and flag_second_cycle:
             logger.info(f"Changing learning rate from {lr} to {lr/10}.")
             lr /= 10
+            flag_second_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
 
 

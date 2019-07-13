@@ -486,3 +486,4 @@ class NeuralCitationNetwork(nn.Module):
 
         return outputs
 
+    #TODO: Add inference pass. Maybe use partialmethod to fix arguments in forward pass?
