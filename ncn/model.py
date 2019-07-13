@@ -111,6 +111,7 @@ class TDNNEncoder(nn.Module):
 
         # output shape: batch_size, list_length*num_filters
         x = x.view(self.bs, -1)
+        logger.debug(f"x shape: {x.shape}")
 
         # apply nonlinear mapping
         x = self.bn(torch.tanh(self.fc(x)))

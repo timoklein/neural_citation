@@ -25,8 +25,12 @@ logger = logging.getLogger("neural_citation.train")
 
 def init_weights(m):
     """
-    Initializes the model layers. Convolutional layers use he-uniform initialization,
-    linear layers use xavier-uniform.  
+    Initializes the model layers. The following initialization schemes are used:  
+
+    - **conv layers**: use the he-uniform initialization scheme proposed in https://arxiv.org/abs/1502.01852.  
+    - **linear layers**: Uses Glorot-Uniform initialization according to http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf.  
+    - **GRU layers**: Initialize the weight matrices as orthogonal matrices according to https://arxiv.org/abs/1312.6120.  
+    - **batchnorm layers**: Use the ResNet reference implementation strategy, i.e. weights = 1 and biases = 0.    
     
     ## Parameters:  
     
@@ -34,6 +38,15 @@ def init_weights(m):
     """
     if isinstance(m, nn.Conv2d):
         init.kaiming_uniform_(m.weight, a=0, nonlinearity="relu")
+    elif isinstance(m, nn.GRU):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, nn.BatchNorm2d, nn.BatchNorm1d):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.Linear):
         init.xavier_uniform_(m.weight)
 
@@ -53,8 +66,25 @@ def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
     return elapsed_mins, elapsed_secs
 
 
-# TODO: Document this
-def train(model, iterator, optimizer, criterion, clip):
+
+def train(model: nn.Module, iterator: BucketIterator, 
+          optimizer: optim, criterion: nn.Module.loss, clip: int) -> float:
+    """
+    Trains the NCN model for a single epoch.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the training data.  
+    - **optimizer** *(optim)*: Torch gradient descent optimizer used to train the model.  
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.  
+    - **clip** *(int)*: Apply gradient clipping at the given value.  
+
+    
+    ## Output:  
+    
+    - **loss** *(float)*: Epoch loss.   
+    """
     
     model.train()
     
@@ -95,8 +125,21 @@ def train(model, iterator, optimizer, criterion, clip):
     return epoch_loss / len(iterator)
 
 
-# TODO: Document this
-def evaluate(model, iterator, criterion):
+
+def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module.loss):
+    """
+    Puts the model in eval mode and evaluates on a single epoch without computing gradients.
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the evaluation data.   
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.    
+
+    ## Output:  
+    
+    - **loss** *(float)*: Validation loss for the epoch.   
+    """
     
     model.eval()
     
@@ -115,14 +158,9 @@ def evaluate(model, iterator, criterion):
             
             output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
 
-            #trg = [trg sent len, batch size]
-            #output = [trg sent len, batch size, output dim]
-
             output = output[1:].view(-1, output.shape[-1])
             ttl = ttl[1:].view(-1)
 
-            #trg = [(trg sent len - 1) * batch size]
-            #output = [(trg sent len - 1) * batch size, output dim]
 
             loss = criterion(output, ttl)
 
@@ -131,9 +169,23 @@ def evaluate(model, iterator, criterion):
     return epoch_loss / len(iterator)
 
 
-def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, 
-              n_epochs: int = 10, clip: int = 5, 
+def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
+              n_epochs: int = 10, clip: int = 5, lr: float = 0.01, 
               save_dir: PathOrStr = "./models") -> None:
+    """
+    Main training function for the NCN model.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **train_iterator** *(BucketIterator)*: Bucketized iterator used for training the model.   
+    - **valid_iterator** *(BucketIterator)*: Bucketized iterator used for evaluating the model.  
+    - **pad** *(int)*: Vocabulary padding index. This index is ignored when calculating the loss.      
+    - **n_epochs** *(int=10)*: Number of training epochs.  
+    - **clip** *(int=5)*: Apply gradient clipping at the given value.  
+    - **lr** *(float=0.01)*: Learning rate for the optimizer. This function uses Adam to train the model.    
+    - **save_dir** *(PathOrstr='./models')*: Save the model with the lowest validation loss at this path.  
+    """
     
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX, reduction="sum")
@@ -164,9 +216,9 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
             if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
         
-        print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-        print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
-        print(f'\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}')
+        logger.info(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
+        logger.info(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
+        logger.info(f'\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}')
 
 
 if __name__ == '__main__':
@@ -189,5 +241,5 @@ if __name__ == '__main__':
     net.to(DEVICE)
     net.apply(init_weights)
 
-    train_ncn(net, data.train_iter, data.valid_iter)
+    train_ncn(net, data.train_iter, data.valid_iter, pad=PAD_IDX)
 
