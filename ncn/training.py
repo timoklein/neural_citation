@@ -188,7 +188,7 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
     """
     
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    criterion = nn.CrossEntropyLoss(ignore_index = PAD_IDX, reduction="sum")
+    criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
 
     best_valid_loss = float('inf')
 
