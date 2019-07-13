@@ -186,6 +186,8 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
     - **lr** *(float=0.01)*: Learning rate for the optimizer. This function uses Adam to train the model.    
     - **save_dir** *(PathOrstr='./models')*: Save the model with the lowest validation loss at this path.  
     """
+    save_dir = Path(save_dir)
+
     
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
