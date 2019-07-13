@@ -84,7 +84,6 @@ class TDNNEncoder(nn.Module):
         super().__init__()
         self.filter_list = filters
         self.num_filters = num_filters
-        self.bs = batch_size
         self._num_filters_total = len(filters)*num_filters
 
         self.encoder = [TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
@@ -105,12 +104,16 @@ class TDNNEncoder(nn.Module):
             Output sequence.
         """
         x = [encoder(x) for encoder in self.encoder]
+        assert len(set([e.shape[0] for e in x])) == 1, "Batch sizes don't match!"
+
 
         # output shape: batch_size, list_length, num_filters
         x = torch.cat(x, dim=1).squeeze()
 
+        batch_size = x.shape[0]
+
         # output shape: batch_size, list_length*num_filters
-        x = x.view(self.bs, -1)
+        x = x.view(batch_size, -1)
         logger.debug(f"x shape: {x.shape}")
 
         # apply nonlinear mapping
@@ -145,7 +148,6 @@ class NCNEncoder(nn.Module):
                        num_filters: int,
                        embed_size: int,
                        pad_idx: int,
-                       batch_size: int,
                        dropout_p: float,
                        authors: bool):
         super().__init__()
@@ -156,24 +158,29 @@ class NCNEncoder(nn.Module):
 
         # context encoder
         self.context_embedding = nn.Embedding(context_vocab_size, embed_size, padding_idx=pad_idx)
-        self.context_encoder = TDNNEncoder(context_filters, num_filters, embed_size, batch_size)
+        self.context_encoder = TDNNEncoder(context_filters, num_filters, embed_size)
 
         # author encoder
         if self.use_authors:
             self.author_embedding = nn.Embedding(author_vocab_size, embed_size, padding_idx=pad_idx)
 
-            self.citing_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size, batch_size)
-            self.cited_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size, batch_size)
+            self.citing_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size)
+            self.cited_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size)
 
     def forward(self, context, authors_citing=None, authors_cited=None):
         """
         ## Input:  
         
-        - **Input 1** *(shapes)*:  
+        - **context** *(batch size)*: Batch of initial title tokens.  
+        - **authors_citing=None** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **authors_cited=None** *(number of filter sizes, batch size, # filters)*: 
+            Encoded context and author information. 
         
         ## Output:  
         
-        - **Output 1** *(shapes)*: 
+        - **output** *(batch_size, total # of filters (authors, cntxt),embedding size)*: 
+            Scores for each word in the vocab.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
         """
         # Embed and encode context
         context = self.dropout(self.context_embedding(context))
@@ -395,8 +402,6 @@ class NeuralCitationNetwork(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
-        self.bs = batch_size
-        self._batched = self.bs > 1
         self.dropout_p = dropout_p
 
         # sanity check
@@ -415,7 +420,6 @@ class NeuralCitationNetwork(nn.Module):
                                   num_filters = self.num_filters,
                                   embed_size = self.embed_size,
                                   pad_idx = self.pad_idx,
-                                  batch_size = self.bs,
                                   dropout_p= self.dropout_p,
                                   authors = self.use_authors)
 
@@ -438,7 +442,7 @@ class NeuralCitationNetwork(nn.Module):
                     f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
                         f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
                     f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
-                    f"\nParameters: Batch size = {self.bs}, Dropout = {self.dropout_p}"
+                    f"\nParameters: Dropout = {self.dropout_p}"
                     "\n--------------------------")
         
         logger.info(settings)
@@ -460,16 +464,19 @@ class NeuralCitationNetwork(nn.Module):
         
         encoder_outputs = self.encoder(context, authors_citing, authors_cited)
         
+        # batch size
+        batch_size = title.shape[1]
+
         # maximum title sequence length
         max_len = title.shape[0]
         
         #tensor to store decoder outputs
-        outputs = torch.zeros(max_len, self.bs, self.title_vocab_size).to(DEVICE)
+        outputs = torch.zeros(max_len, batch_size, self.title_vocab_size).to(DEVICE)
                 
         #first input to the decoder is the <sos> tokens
         output = title[0,:]
         
-        hidden= self.decoder.init_hidden(self.bs)
+        hidden= self.decoder.init_hidden(batch_size)
         
         for t in range(1, max_len):
             output, hidden = self.decoder(output, hidden, encoder_outputs)
