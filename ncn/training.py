@@ -4,7 +4,7 @@ import random
 import logging
 from pathlib import Path
 from datetime import datetime
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from typing import Tuple
 
 import torch
@@ -15,10 +15,10 @@ import torch.nn.init as init
 from torch.utils.tensorboard import SummaryWriter
 from torchtext.data import BucketIterator
 
-import core
-from core import DEVICE, SEED, PathOrStr
-from data_utils import generate_bucketized_iterators
-from model import NeuralCitationNetwork
+import ncn.core
+from ncn.core import DEVICE, SEED, PathOrStr
+from ncn.data_utils import get_bucketized_iterators
+from ncn.model import NeuralCitationNetwork
 
 logger = logging.getLogger("neural_citation.train")
 
@@ -90,7 +90,7 @@ def train(model: nn.Module, iterator: BucketIterator,
     
     epoch_loss = 0
     
-    for i, batch in enumerate(iterator):
+    for i, batch in enumerate(tqdm(iterator, desc="Training batches")):
         
         # unpack and move to GPU if available
         cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
@@ -147,7 +147,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     
     with torch.no_grad():
     
-        for i, batch in enumerate(iterator):
+        for i, batch in enumerate(tqdm(iterator, desc="Evaluating batches")):
 
             # unpack and move to GPU if available
             cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
@@ -169,9 +169,9 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     return epoch_loss / len(iterator)
 
 
-def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
-              n_epochs: int = 20, clip: int = 5, lr: float = 0.001, 
-              save_dir: PathOrStr = "./models") -> None:
+def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
+                n_epochs: int = 20, clip: int = 5, lr: float = 0.001, 
+                save_dir: PathOrStr = "./models") -> None:
     """
     Main training function for the NCN model.  
     
@@ -202,7 +202,7 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
     log_dir = Path(f"runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}")
     writer = SummaryWriter(log_dir=log_dir)
 
-    for epoch in range(n_epochs):
+    for epoch in trange(n_epochs, desc= "Epochs"):
         
         start_time = time.time()
         
@@ -211,7 +211,7 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
 
         end_time = time.time()
 
-        epoch_mins, epoch_secs = epoch_time(start_time, end_time)#
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
         writer.add_scalar('loss/training', train_loss, epoch)
         writer.add_scalar('loss/validation', valid_loss, epoch)
@@ -225,37 +225,14 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
         logger.info(f"\tTrain Loss: {train_loss:.3f}")
         logger.info(f"\t Val. Loss: {valid_loss:.3f}")
 
-        if valid_loss < 1260 and flag_first_cycle: 
+        if valid_loss < 1200 and flag_first_cycle: 
             logger.info(f"Decreasing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_first_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
-        elif valid_loss < 1150 and flag_second_cycle:
+        elif valid_loss < 1130 and flag_second_cycle:
             logger.info(f"Changing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_second_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
-
-
-if __name__ == '__main__':
-    # Set the random seeds before training
-    random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.backends.cudnn.deterministic = True
-
-    # set up training
-    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv")
-    PAD_IDX = data.ttl.vocab.stoi['<pad>']
-    cntxt_vocab_len = len(data.cntxt.vocab)
-    aut_vocab_len = len(data.aut.vocab)
-    ttl_vocab_len = len(data.ttl.vocab)
-    
-
-    net = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=cntxt_vocab_len,
-                                authors=True, author_filters=[1,2], author_vocab_size=aut_vocab_len,
-                                title_vocab_size=ttl_vocab_len, pad_idx=PAD_IDX, num_layers=2)
-    net.to(DEVICE)
-    net.apply(init_weights)
-
-    train_ncn(net, data.train_iter, data.valid_iter, pad=PAD_IDX)
 

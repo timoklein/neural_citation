@@ -5,7 +5,7 @@ from spacy.lang.en import English
 from typing import Union, List
 from pathlib import Path
 from typing import NamedTuple
-from torchtext.data import Field, BucketIterator
+from torchtext.data import Field, BucketIterator, TabularDataset
 
 
 # Custom data types and structures
@@ -15,9 +15,9 @@ PathOrStr = Union[Path, str]
 Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
-class Data(NamedTuple):
+class IteratorData(NamedTuple):
     """
-    Container holding the data needed to train the NCN model. 
+    Container holding the iterators needed to train the NCN model. 
     
     ## Attributes:  
     
@@ -25,7 +25,7 @@ class Data(NamedTuple):
     - **ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data.  
     - **aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data.  
     - **train_iter, vailid_iter, test_iter** *(torch.text.data.BucketIterator)*:  
-        Iterators containing the training examples of the form context, citing_authors, (title, title_length), cited_authors.
+        Iterators containing the training examples of the form context, citing_authors, title, cited_authors.
         Data is bucketted according to the title length.        
     """
     cntxt: Field
@@ -34,6 +34,26 @@ class Data(NamedTuple):
     train_iter: BucketIterator
     valid_iter: BucketIterator
     test_iter: BucketIterator
+
+
+class BaseData(NamedTuple):
+    """
+    Container holding base data for the arxiv CS dataset. 
+    
+    ## Attributes:  
+    
+    - **cntxt** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for context data.  
+    - **ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data.  
+    - **aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data.  
+    - **train_iter, vailid_iter, test_iter** *(torch.text.data.TabularDataset)*:  
+        Datasets containing the training examples of the form context, citing_authors, title, cited_authors.      
+    """
+    cntxt: Field
+    ttl: Field
+    aut: Field
+    train: TabularDataset
+    valid: TabularDataset
+    test: TabularDataset
 
 
 # Global constants
@@ -52,7 +72,7 @@ MAX_CONTEXT_LENGTH = 100
 MAX_AUTHORS = 7
 """Maximum number of authors considered"""
 
-SEED = 69
+SEED = 34
 """RNG seed for reproducability."""
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

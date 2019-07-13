@@ -14,9 +14,9 @@ from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
-import core
-from core import PathOrStr, Data
-from core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
+import ncn.core
+from ncn.core import PathOrStr, IteratorData, BaseData
+from ncn.core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
 
 
 
@@ -297,7 +297,7 @@ def author_preprocessing(text: str) -> List[str]:
         return text
 
 
-def generate_data_fields():
+def get_fields():
     """
     Initializer for the torchtext Field objects used to numericalize textual data.  
     
@@ -331,25 +331,9 @@ def generate_data_fields():
     return CNTXT, TTL, AUT
 
 
-# TODO: Put dataset generation into seperate class
-def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
-    """
-    Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.
-    The vocab of the author, context and title fields is built *on the whole dataset*
-    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits.  
-    
-    ## Parameters:  
-    
-    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
-    
-    ## Output:  
-    
-    - **Training data** *(Data)*:  Container holding CNTXT (Field), TTL (Field), AUT (Field), 
-        train_iterator (BucketIterator), valid_iterator (BucketIterator), test_iterator (BucketIterator) objects.
-    """
+def get_datasets(path_to_data: PathOrStr) -> BaseData:
     logger.info("Getting fields...")
-    CNTXT, TTL, AUT = generate_data_fields()
-
+    CNTXT, TTL, AUT = get_fields()
     # generate torchtext dataset from a .csv given the fields for each datatype
     # has to be single dataset in order to build proper vocabularies
     logger.info("Loading dataset...")
@@ -365,18 +349,40 @@ def generate_bucketized_iterators(path_to_data: PathOrStr) -> Data:
 
     # split dataset
     train, valid, test = dataset.split([0.7,0.2,0.1])
+    return BaseData(CNTXT, TTL, AUT, train, valid, test)
+
+
+# TODO: Put dataset generation into seperate class
+def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
+    """
+    Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.
+    The vocab of the author, context and title fields is built *on the whole dataset*
+    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits.  
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
+    
+    ## Output:  
+    
+    - **Training data** *(Data)*:  Container holding CNTXT (Field), TTL (Field), AUT (Field), 
+        train_iterator (BucketIterator), valid_iterator (BucketIterator), test_iterator (BucketIterator) objects.
+    """
+
+    
+    data = get_datasets(path_to_data=path_to_data)
 
     # create bucketted iterators for each dataset
-    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((train, valid, test), 
+    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
                                                                           batch_size = 32,
                                                                           sort_within_batch = True,
                                                                           sort_key = lambda x : len(x.title_cited))
     
-    return Data(CNTXT, TTL, AUT, train_iterator, valid_iterator, test_iterator)
+    return IteratorData(data.cntxt, data.ttl, data.aut, train_iterator, valid_iterator, test_iterator)
 
     
 if __name__ == '__main__':
     # path_to_data = "/home/timo/DataSets/KD_arxiv_CS/arxiv-cs"
     # clean_incomplete_data(path_to_data)
     # prepare_data(path_to_data)
-    data = generate_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv")
+    data = get_bucketized_iterators("/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv")

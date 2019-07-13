@@ -6,8 +6,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-import core
-from core import Filters, DEVICE
+import ncn.core
+from ncn.core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
