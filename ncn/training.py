@@ -44,7 +44,7 @@ def init_weights(m):
                 init.orthogonal_(param.data)
             else:
                 init.normal_(param.data)
-    elif isinstance(m, nn.BatchNorm2d, nn.BatchNorm1d):
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
         nn.init.constant_(m.weight, 1)
         nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.Linear):
@@ -68,7 +68,7 @@ def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
 
 
 def train(model: nn.Module, iterator: BucketIterator, 
-          optimizer: optim, criterion: nn.Module.loss, clip: int) -> float:
+          optimizer: optim, criterion: nn.Module, clip: int) -> float:
     """
     Trains the NCN model for a single epoch.  
     
@@ -126,7 +126,7 @@ def train(model: nn.Module, iterator: BucketIterator,
 
 
 
-def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module.loss):
+def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     """
     Puts the model in eval mode and evaluates on a single epoch without computing gradients.
     

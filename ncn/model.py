@@ -78,8 +78,7 @@ class TDNNEncoder(nn.Module):
     """
     def __init__(self, filters: Filters,
                        num_filters: int,
-                       embed_size: int,
-                       batch_size: int):
+                       embed_size: int):
 
         super().__init__()
         self.filter_list = filters
