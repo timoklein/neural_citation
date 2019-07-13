@@ -189,7 +189,7 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
     save_dir = Path(save_dir)
 
     
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
 
     best_valid_loss = float('inf')
@@ -218,9 +218,14 @@ def train_ncn(model: nn.Module, train_iterator: BucketIterator, valid_iterator: 
             if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
         
-        logger.info(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-        logger.info(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
-        logger.info(f'\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}')
+        logger.info(f"Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s")
+        logger.info(f"\tTrain Loss: {train_loss:.3f}")
+        logger.info(f"\t Val. Loss: {valid_loss:.3f}")
+
+        if valid_loss < 1260: 
+            logger.info(f"Changing learning rate from {lr} to {lr/10}.")
+            lr /= 10
+            optimizer = optim.Adam(model.parameters(), lr=lr)
 
 
 if __name__ == '__main__':
