@@ -330,7 +330,7 @@ def get_fields():
 
     return CNTXT, TTL, AUT
 
-
+# TODO: Document this
 def get_datasets(path_to_data: PathOrStr) -> BaseData:
     logger.info("Getting fields...")
     CNTXT, TTL, AUT = get_fields()
@@ -352,7 +352,7 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 
-# TODO: Put dataset generation into seperate class
+# TODO: Update docs
 def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
     """
     Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.
