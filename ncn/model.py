@@ -122,6 +122,22 @@ class TDNNEncoder(nn.Module):
 
 # TODO: Document this
 class NCNEncoder(nn.Module):
+    """
+    Insert your description here.  
+    
+    ## Parameters:  
+    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
+    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
+    - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
+    - **batch_size** *(int)*: Training batch size.  
+    - **dropout_p** *(float)*: Dropout probability for the dropout regularization layers.  
+    - **authors** *(bool)*: Use author information in the encoder.   
+    """
     def __init__(self, context_filters: Filters,
                        author_filters: Filters,
                        context_vocab_size: int,
@@ -150,6 +166,15 @@ class NCNEncoder(nn.Module):
             self.cited_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size, batch_size)
 
     def forward(self, context, authors_citing=None, authors_cited=None):
+        """
+        ## Input:  
+        
+        - **Input 1** *(shapes)*:  
+        
+        ## Output:  
+        
+        - **Output 1** *(shapes)*: 
+        """
         # Embed and encode context
         context = self.dropout(self.context_embedding(context))
         context = self.context_encoder(context)
@@ -330,8 +355,8 @@ class NeuralCitationNetwork(nn.Module):
     - **author_filters** *(int)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
     - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
-    - **author:vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
-    - **pad_idx** *(int)*: Number of filters applied in the TDNN layers of the model.  
+    - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
+    - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
     - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
     - **authors** *(bool=True)*: Use author information in the encoder.  
     - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
