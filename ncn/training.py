@@ -231,8 +231,6 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
             with open(save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_settings.txt", "w") as file:
                 file.write(settings + f"Valid loss = {valid_loss}")
-
-            # ,  Valid Loss = 1128.804
         
         logger.info(f"Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s")
         logger.info(f"\tTrain Loss: {train_loss:.3f}")

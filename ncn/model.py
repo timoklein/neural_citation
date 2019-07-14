@@ -39,13 +39,13 @@ class TDNN(nn.Module):
         """
         ## Input:  
 
-        - **Tensor** *(L: sequence length, N: batch size, D: embedding dimensions)*:  
-            Input sequence.
+        - **Embedded sequence** *(batch size, seq length, embedding dimensions)*:  
+            Tensor containing a batch of embedded input sequences.
 
         ## Output:  
 
-        - **Tensor** *(batch_size, num_filters)*:  
-            Output sequence. 
+        - **Convolved sequence** *(batch_size, num_filters)*:  
+            Tensor containing the output. 
         """
         # [N: batch size, L: seq length, D embedding dimensions] -> [N: batch size, D embedding dimensions, L: seq length]
         x = x.permute(0, 2, 1)
@@ -90,17 +90,18 @@ class TDNNEncoder(nn.Module):
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
         self.bn = nn.BatchNorm1d(self._num_filters_total)
 
+
     def forward(self, x):
         """
         ## Input:  
 
-        - **Tensor** *(batch size, embedding dimensions, sequence length)*:
-            Input sequence.  
+        - **Embeddings** *(batch size, seq length, embedding dimensions)*:
+            Embedded input sequence.  
 
         ## Output:  
 
-        - **Tensor** *(number of filter sizes, batch size, # filters)*:
-            Output sequence.
+        - **Encodings** *(number of filter sizes, batch size, # filters)*:
+            Tensor containing the complete context/author encodings.
         """
         x = [encoder(x) for encoder in self.encoder]
         assert len(set([e.shape[0] for e in x])) == 1, "Batch sizes don't match!"
@@ -169,16 +170,18 @@ class NCNEncoder(nn.Module):
         """
         ## Input:  
         
-        - **context** *(batch size)*: Batch of initial title tokens.  
-        - **authors_citing=None** *(batch size, hidden_dim): Hidden state of the GRU unit.  
-        - **authors_cited=None** *(number of filter sizes, batch size, # filters)*: 
-            Encoded context and author information. 
+        - **context** *(batch size, seq_length)*: 
+            Tensor containing a batch of context indices.  
+        - **authors_citing=None** *(batch size, seq_length):
+            Tensor containing a batch of citing author indices.  
+        - **authors_cited=None** *(batch size, seq_length)*: 
+            Tensor containing a batch of cited author indices.
         
         ## Output:  
         
-        - **output** *(batch_size, total # of filters (authors, cntxt),embedding size)*: 
-            Scores for each word in the vocab.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
+            If authors= True the output tensor contains the concatenated context and author encodings.
+            Else the encoded context is returned.
         """
         # Embed and encode context
         context = self.dropout(self.context_embedding(context))
@@ -346,7 +349,7 @@ class Decoder(nn.Module):
         return output, hidden.squeeze(0)
 
 
-# TODO: Create inference pass for NCN
+
 class NeuralCitationNetwork(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
@@ -445,20 +448,34 @@ class NeuralCitationNetwork(nn.Module):
             "\n-------------------------------------------------"
         )
 
-    def count_parameters(self): return sum(p.numel() for p in self.parameters() if p.requires_grad)
+    def count_parameters(self):
+        """Calculates the number of trainable parameters.""" 
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
-    # TODO: Improve documentation here
     def forward(self, context, title, authors_citing=None, authors_cited=None,
-               teacher_forcing_ratio=1):
+               teacher_forcing_ratio: float = 1):
         """
+        ## Parameters:  
+
+        - **teacher_forcing_ratio** *(float=1)*: Determines the ratio with which
+            the model is fed the true output to predict the next token. Defaults to 1 which means
+            a token is always conditioned on the true previous output.
+
         ## Inputs:  
     
-        - **Tensor** *(N: batch size, D: embedding dimensions, L: sequence length)*:  
-            Encoder input sequence.  
+        - **context** *(batch size, seq_length)*: 
+            Tensor containing a batch of context indices.  
+        - **title** *(seq_length, batch size)*: 
+            Tensor containing a batch of title indices. Note: not batch first!
+        - **authors_citing=None** *(batch size, seq_length):
+            Tensor containing a batch of citing author indices.  
+        - **authors_cited=None** *(batch size, seq_length)*: 
+            Tensor containing a batch of cited author indices. 
         
         ## Output:  
         
-        - **Output 1**: *(shapes)* 
+        - **output** *(batch_size, title_vocab_len)*: 
+            Tensor containing the predictions of the decoder.
         """
         
         encoder_outputs = self.encoder(context, authors_citing, authors_cited)
