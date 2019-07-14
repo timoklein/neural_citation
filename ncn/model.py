@@ -17,7 +17,7 @@ class TDNN(nn.Module):
     Single TDNN Block for the neural citation network.
     Implementation is based on:  
     https://ronan.collobert.com/pub/matos/2008_nlp_icml.pdf.  
-    Consists of the following layers (in order): Convolution, Batchnorm, ReLu, MaxPool.  
+    Consists of the following layers (in order): Convolution, ReLu, Batchnorm, MaxPool.  
 
     ## Parameters:   
 
@@ -447,7 +447,8 @@ class NeuralCitationNetwork(nn.Module):
         logger.info(settings)
 
     def count_parameters(self): return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
+    
+    # TODO: Improve documentation here
     def forward(self, context, title, authors_citing=None, authors_cited=None,
                teacher_forcing_ratio=1):
         """

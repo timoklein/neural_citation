@@ -202,6 +202,8 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
     log_dir = Path(f"runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}")
     writer = SummaryWriter(log_dir=log_dir)
 
+    # TODO: Save settings.txt
+
     for epoch in trange(n_epochs, desc= "Epochs"):
         
         start_time = time.time()

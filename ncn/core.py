@@ -16,44 +16,58 @@ Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
 class IteratorData(NamedTuple):
-    """
-    Container holding the iterators needed to train the NCN model. 
-    
-    ## Attributes:  
-    
-    - **cntxt** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for context data.  
-    - **ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data.  
-    - **aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data.  
-    - **train_iter, vailid_iter, test_iter** *(torch.text.data.BucketIterator)*:  
-        Iterators containing the training examples of the form context, citing_authors, title, cited_authors.
-        Data is bucketted according to the title length.        
-    """
+    """ Container holding the iterators needed to train the NCN model."""
+
     cntxt: Field
+    """**cntxt** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for context data."""
     ttl: Field
+    """**ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data."""
     aut: Field
+    """**aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data."""
     train_iter: BucketIterator
+    """
+    **train_iter** *(torch.text.data.BucketIterator)*:  
+    Iterator containing the training samples of the form context, citing_authors, title, cited_authors.
+    Data is bucketted according to the title length.
+    """
     valid_iter: BucketIterator
+    """
+    **valid_iter** *(torch.text.data.BucketIterator)*:  
+    Iterator containing samples for the validation pass. Format: context, citing_authors, title, cited_authors.
+    Data is bucketted according to the title length.
+    """
     test_iter: BucketIterator
+    """
+    **test_iter** *(torch.text.data.BucketIterator)*:  
+    Iterator containing samples for the test pass. Format: context, citing_authors, title, cited_authors.
+    Data is bucketted according to the title length.
+    """
 
 
 class BaseData(NamedTuple):
-    """
-    Container holding base data for the arxiv CS dataset. 
-    
-    ## Attributes:  
-    
-    - **cntxt** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for context data.  
-    - **ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data.  
-    - **aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data.  
-    - **train_iter, vailid_iter, test_iter** *(torch.text.data.TabularDataset)*:  
-        Datasets containing the training examples of the form context, citing_authors, title, cited_authors.      
-    """
+    """Container holding base data for the arxiv CS dataset."""
+
     cntxt: Field
+    """**cntxt** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for context data"""
     ttl: Field
+    """**ttl** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for title data."""
     aut: Field
+    """**aut** *(torch.text.data.Field)*: Field containing preprocessing steps and vocabulary for author data."""
     train: TabularDataset
+    """
+    **train** *(torch.text.data.TabularDataset)*:  
+    Dataset containing the training samples of the form context, citing_authors, title, cited_authors.
+    """
     valid: TabularDataset
+    """
+    **valid** *(torch.text.data.TabularDataset)*:  
+    Dataset containing the validation samples of the form context, citing_authors, title, cited_authors.
+    """
     test: TabularDataset
+    """
+    **test** *(torch.text.data.TabularDataset)*:  
+    Dataset containing the training samples of the form context, citing_authors, title, cited_authors.
+    """
 
 
 # Global constants
