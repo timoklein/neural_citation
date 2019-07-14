@@ -58,9 +58,19 @@ class Evaluator:
     # Check if it's single int or list of ints and act accordingly
     def recall(self, x: Ints):
         if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
-        for example in self.data.test:
-            context = self.context.numericalize([example.context])
-            indices = self._get_bm_top(example.context)
+        
+        if isinstance(x, int):
+            for example in self.data.test:
+                context = self.context.numericalize([example.context])
+                citing = self.context.numericalize([example.authors_citing])
+                indices = self._get_bm_top(example.context)
+                # get titles, cited authors with top indices, pad and numericalize
+
+                # repeat context and citing to len(indices) and calculate loss for single, large batch
+
+        elif isinstance(x, list):
+            for at_x in x:
+                pass
         
 
     # TODO: For a query return the best citation context. Need to preprocess with context field first

@@ -5,6 +5,8 @@ from ncn.training import init_weights, train_model
 from ncn.model import NeuralCitationNetwork
 from ncn.data_utils import get_bucketized_iterators
 
+# NOTE: This code won't run because of the tnrange, tqdm_notebook in training.py.
+# Use trange and tqdm if you want this to run from the script.
 
 
 if __name__ == '__main__':

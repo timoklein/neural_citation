@@ -16,6 +16,7 @@ Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
 Ints = Union[int, List[int]]
+"""Single integer or list of integers for evaluating recall."""
 
 class IteratorData(NamedTuple):
     """ Container holding the iterators needed to train the NCN model."""

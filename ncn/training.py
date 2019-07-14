@@ -4,7 +4,7 @@ import random
 import logging
 from pathlib import Path
 from datetime import datetime
-from tqdm import tqdm, trange
+from tqdm import tqdm_notebook, tnrange
 from typing import Tuple
 
 import torch
@@ -90,7 +90,7 @@ def train(model: nn.Module, iterator: BucketIterator,
     
     epoch_loss = 0
     
-    for i, batch in enumerate(tqdm(iterator, desc="Training batches")):
+    for i, batch in enumerate(tqdm_notebook(iterator, desc="Training batches")):
         
         # unpack and move to GPU if available
         cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
@@ -147,7 +147,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     
     with torch.no_grad():
     
-        for i, batch in enumerate(tqdm(iterator, desc="Evaluating batches")):
+        for i, batch in enumerate(tqdm_notebook(iterator, desc="Evaluating batches")):
 
             # unpack and move to GPU if available
             cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
@@ -213,7 +213,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
 
     logger.info(settings)
 
-    for epoch in trange(n_epochs, desc= "Epochs"):
+    for epoch in tnrange(n_epochs, desc= "Epochs"):
         
         start_time = time.time()
         
