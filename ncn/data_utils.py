@@ -330,8 +330,22 @@ def get_fields():
 
     return CNTXT, TTL, AUT
 
-# TODO: Document this
+
 def get_datasets(path_to_data: PathOrStr) -> BaseData:
+    """
+    Initializes torchtext Field and TabularDataset objects used for training.
+    The vocab of the author, context and title fields is built *on the whole dataset*
+    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits. 
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    
+    ## Output:  
+    
+    - **data** *(BaseData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train (*TabularDataset*), valid (*TabularDataset*), test (*TabularDataset*) objects.
+    """
     logger.info("Getting fields...")
     CNTXT, TTL, AUT = get_fields()
     # generate torchtext dataset from a .csv given the fields for each datatype
@@ -352,12 +366,9 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 
-# TODO: Update docs
 def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
     """
-    Initializes torchtext Field, TabularDataset and BucketIterator objects used for training.
-    The vocab of the author, context and title fields is built *on the whole dataset*
-    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits.  
+    Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
     ## Parameters:  
     
@@ -365,10 +376,9 @@ def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
     
     ## Output:  
     
-    - **Training data** *(Data)*:  Container holding CNTXT (Field), TTL (Field), AUT (Field), 
-        train_iterator (BucketIterator), valid_iterator (BucketIterator), test_iterator (BucketIterator) objects.
+    - **Training data** *(IteratorData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
     """
-
     
     data = get_datasets(path_to_data=path_to_data)
 
