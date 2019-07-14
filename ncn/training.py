@@ -236,12 +236,12 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
         logger.info(f"\tTrain Loss: {train_loss:.3f}")
         logger.info(f"\t Val. Loss: {valid_loss:.3f}")
 
-        if valid_loss < 1140 and flag_first_cycle: 
+        if valid_loss < 1100 and flag_first_cycle: 
             logger.info(f"Decreasing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_first_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
-        elif valid_loss < 1120 and flag_second_cycle:
+        elif valid_loss < 1050 and flag_second_cycle:
             logger.info(f"Changing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_second_cycle = False

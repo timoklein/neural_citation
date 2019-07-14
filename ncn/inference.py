@@ -27,29 +27,31 @@ class Evaluator:
                                 title_vocab_size=len(self.title.vocab), pad_idx=pad, num_layers=2)
 
         # instantiate examples, corpus and bm25 depending on mode
+        logger.info(f"Creating corpus in eval={eval} mode.")
         if eval:
             self.examples = data.test.examples
+            logger.info(f"Number of samples in corpus: {len(self.examples)}")
             self.corpus = [example.title_cited for example in examples]
             self.bm25 = BM25(corpus)
         else:
             self.examples = data.train.examples + data.train.examples+ data.train.examples
+            logger.info(f"Number of samples in corpus: {len(self.examples)}")
             self.corpus = [example.title_cited for example in examples]
             self.bm25 = BM25(corpus)
 
     def _get_bm_top(self, query: str) -> List[Tuple[float, str]]:
         q = self.context.tokenize(query)
 
-        # create {bm_score, title} dict and sort according to score
-        # return only titles with bm25 score > 0 to speed up inference
+        # sort titles according to score and return indices
         scores = [
-            (scores[0], scores[1]) for i, scores in enumerate(zip(bm25.get_scores(q), self.corpus))
-            if bm25.get_score(q, i) > 0
+            (score, index) for score, index in enumerate(bm25.get_scores(q))
+            if bm25.get_score(q, index) > 0
         ]
         scores = sorted(scores, key=itemgetter(0), reverse=True)
         try:
-            return [title for _, title in scores][:2048]
+            return [index for _, index in scores][:2048]
         except IndexError:
-            return [title for _, title in scores]
+            return [index for _, index in scores]
 
     # TODO: get top 2048, pass through ncn for a single context, rerank according to ncn scores
     # Then evaluate if rerank is in top x, compute and return total score
@@ -58,7 +60,7 @@ class Evaluator:
         if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         for example in self.data.test:
             context = self.context.numericalize([example.context])
-            citing = self.authors.
+            indices = self._get_bm_top(example.context)
         
 
     # TODO: For a query return the best citation context. Need to preprocess with context field first
