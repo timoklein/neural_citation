@@ -366,13 +366,14 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 
-def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
+def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 32) -> IteratorData:
     """
     Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
     ## Parameters:  
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
+    - **batch_size** *(int=32)*: BucketIterator minibatch size.  
     
     ## Output:  
     
@@ -384,7 +385,7 @@ def get_bucketized_iterators(path_to_data: PathOrStr) -> IteratorData:
 
     # create bucketted iterators for each dataset
     train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
-                                                                          batch_size = 32,
+                                                                          batch_size = batch_size,
                                                                           sort_within_batch = True,
                                                                           sort_key = lambda x : len(x.title_cited))
     

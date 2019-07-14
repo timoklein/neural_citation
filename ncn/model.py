@@ -17,7 +17,7 @@ class TDNN(nn.Module):
     Single TDNN Block for the neural citation network.
     Implementation is based on:  
     https://ronan.collobert.com/pub/matos/2008_nlp_icml.pdf.  
-    Consists of the following layers (in order): Convolution, ReLu, Batchnorm, MaxPool.  
+    Consists of the following layers (in order): Convolution, ReLu, MaxPool.  
 
     ## Parameters:   
 
@@ -68,13 +68,13 @@ class TDNNEncoder(nn.Module):
     """
     Encoder Module based on the TDNN architecture.
     Applies as list of filters with different region sizes on an input sequence.  
+    The resulting feature maps are then allowed to interact with each other across a fully connected layer.  
     
     ## Parameters:  
     
     - **filters** *(Filters)*: List of integers determining the filter lengths.    
     - **num_filters** *(int)*: Number of filters applied in the TDNN convolutional layers.  
     - **embed_size** *(int)*: Dimensions of the used embeddings.  
-    - **bach_size** *(int)*: Training batch size. 
     """
     def __init__(self, filters: Filters,
                        num_filters: int,
@@ -122,10 +122,10 @@ class TDNNEncoder(nn.Module):
         return x.view(len(self.filter_list), -1, self.num_filters)
 
 
-# TODO: Document this
+
 class NCNEncoder(nn.Module):
     """
-    Insert your description here.  
+    Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
     - **context_filters** *(int)*: List of ints representing the context filter lengths.  
@@ -136,7 +136,6 @@ class NCNEncoder(nn.Module):
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
     - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
-    - **batch_size** *(int)*: Training batch size.  
     - **dropout_p** *(float)*: Dropout probability for the dropout regularization layers.  
     - **authors** *(bool)*: Use author information in the encoder.   
     """
@@ -433,18 +432,18 @@ class NeuralCitationNetwork(nn.Module):
                                attention = self.attention)
         
 
-        settings = (f"INITIALIZING NEURAL CITATION NETWORK WITH AUTHORS = {self.use_authors}"
-                    f"\nRunning on: {DEVICE}"
-                    f"\nNumber of model parameters: {self.count_parameters():,}"
-                    f"\nEncoders: # Filters = {self.num_filters}, "
-                        f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
-                    f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
-                        f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
-                    f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
-                    f"\nParameters: Dropout = {self.dropout_p}"
-                    "\n--------------------------")
-        
-        logger.info(settings)
+        self.settings = (
+            f"INITIALIZING NEURAL CITATION NETWORK WITH AUTHORS = {self.use_authors}"
+            f"\nRunning on: {DEVICE}"
+            f"\nNumber of model parameters: {self.count_parameters():,}"
+            f"\nEncoders: # Filters = {self.num_filters}, "
+            f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
+            f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
+            f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
+            f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+            f"\nParameters: Dropout = {self.dropout_p}"
+            "\n-------------------------------------------------"
+        )
 
     def count_parameters(self): return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
@@ -464,10 +463,7 @@ class NeuralCitationNetwork(nn.Module):
         
         encoder_outputs = self.encoder(context, authors_citing, authors_cited)
         
-        # batch size
         batch_size = title.shape[1]
-
-        # maximum title sequence length
         max_len = title.shape[0]
         
         #tensor to store decoder outputs
@@ -487,4 +483,3 @@ class NeuralCitationNetwork(nn.Module):
 
         return outputs
 
-    #TODO: Add inference pass. Maybe use partialmethod to fix arguments in forward pass?

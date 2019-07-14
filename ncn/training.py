@@ -202,7 +202,14 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
     log_dir = Path(f"runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}")
     writer = SummaryWriter(log_dir=log_dir)
 
-    # TODO: Save settings.txt
+    training_settings = (
+        "\nTRAINING SETTINGS"
+        f"Seed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}"
+        "\n-------------------------------------------------"
+    )
+    settings = (model.settings + training_settings)
+
+    logger.info(settings)
 
     for epoch in trange(n_epochs, desc= "Epochs"):
         
@@ -222,6 +229,10 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
             best_valid_loss = valid_loss
             if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
+            with open(save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_settings.txt", "w") as file:
+                file.write(settings + f"Valid loss = {valid_loss}")
+
+            # ,  Valid Loss = 1128.804
         
         logger.info(f"Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s")
         logger.info(f"\tTrain Loss: {train_loss:.3f}")
