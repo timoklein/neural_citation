@@ -17,11 +17,15 @@ logger = logging.getLogger("neural_citation.inference")
 
 
 # TODO: Document this
+# TODO: Refactor this
 class Evaluator:
-    def __init__(self, weights, data: BaseData, pad: int = 1, eval: bool = True):
+    def __init__(self, weights, data: BaseData, eval: bool = True):
         self.data = data
         self.context, self.title, self.authors = self.data.cntxt, self.data.ttl, self.data.aut
+        pad = self.title.vocab.stoi['<pad>']
         self.criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
+
+        # instantiating model like this is bad, pass as params?
         self.model = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=len(self.context.vocab),
                                 authors=True, author_filters=[1,2], author_vocab_size=len(self.authors.vocab),
                                 title_vocab_size=len(self.title.vocab), pad_idx=pad, num_layers=2)
@@ -64,7 +68,7 @@ class Evaluator:
                 context = self.context.numericalize([example.context])
                 citing = self.context.numericalize([example.authors_citing])
                 indices = self._get_bm_top(example.context)
-                # get titles, cited authors with top indices, pad and numericalize
+                # get titles, cited authors with top indices, pad and numericalize (see notebook)
 
                 # repeat context and citing to len(indices) and calculate loss for single, large batch
 
@@ -74,6 +78,8 @@ class Evaluator:
         
 
     # TODO: For a query return the best citation context. Need to preprocess with context field first
-    def recommend(self, query: str):
+    def recommend(self, query: str, top_x: int):
         if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         q = self.data.cntxt.tokenize(query)
+        # get indices
+        # return top x
