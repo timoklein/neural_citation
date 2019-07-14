@@ -68,7 +68,7 @@ def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
 
 
 def train(model: nn.Module, iterator: BucketIterator, 
-          optimizer: optim, criterion: nn.Module, clip: int) -> float:
+          optimizer: optim, criterion: nn.Module, clip: float) -> float:
     """
     Trains the NCN model for a single epoch.  
     
@@ -170,7 +170,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
 
 
 def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
-                n_epochs: int = 20, clip: int = 5, lr: float = 0.001, 
+                n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
                 save_dir: PathOrStr = "./models") -> None:
     """
     Main training function for the NCN model.  
@@ -236,12 +236,12 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
         logger.info(f"\tTrain Loss: {train_loss:.3f}")
         logger.info(f"\t Val. Loss: {valid_loss:.3f}")
 
-        if valid_loss < 1200 and flag_first_cycle: 
+        if valid_loss < 1140 and flag_first_cycle: 
             logger.info(f"Decreasing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_first_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
-        elif valid_loss < 1130 and flag_second_cycle:
+        elif valid_loss < 1120 and flag_second_cycle:
             logger.info(f"Changing learning rate from {lr} to {lr/10}.")
             lr /= 10
             flag_second_cycle = False

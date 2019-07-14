@@ -1,22 +1,7 @@
 # Deep citation recommendation
 PyTorch reimplementation of the neural citation network.
 Authors original code can be found here:  
-https://github.com/tebesu/NeuralCitationNetwork.
- 
-## Questions
-* Embeddings: Rare words vs common words. How to choose vocab?
-* Choose Max length for all info  40 titles, 5 authors  
-* How to embed contexts and titles?  First use Glove pretrained.  
-* Attention decoder help  
-* We have no preselection algorithm. How to proceeed?  BM-25 or whole test set.  
-* Paperformat ACM template.  
-
-## Tasks
-* Implement training loops (Timo)
-* Train model (Timo)
-* Document code (Timo)
-* Write theory (Joan)  
-* Implement BM-25 (Joan)  
+https://github.com/tebesu/NeuralCitationNetwork. 
 
 ## Stats  
 
@@ -47,6 +32,6 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Title embedding size = __128__  
 * Maximum title length = __40__  
 * Optimizer = __ADAM__  
-* Learning rate = __0.1__  
-* Dropout = __0.8__  
+* Learning rate = __0.01__  
+* Dropout = __0.2__  
 * Gradient clipping = __5.0__  
