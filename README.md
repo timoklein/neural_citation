@@ -37,6 +37,6 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Gradient clipping = __5.0__  
 
 ## Experiment results  
-* Batchnorm in TDNN: Speeds up convergence.   
-* Custom initialization: TBD  
+* Batchnorm in TDNN: Seems to speed up convergence (todo: 2 end to end runs for comparison)  
+* Custom initialization: Doesn't seem like big improvement, torch defaults are very good. 
 * More TDNNs: TBD  
