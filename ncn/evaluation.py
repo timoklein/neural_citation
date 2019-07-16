@@ -1,7 +1,7 @@
 import logging
 from operator import itemgetter
 import warnings
-from typing import OrderedDict, Tuple, List
+from typing import OrderedDict, Tuple, List, Union
 
 import torch
 from torch import nn
@@ -29,15 +29,7 @@ class Evaluator:
         Also holds initialized context, title and author fields.  
     - **eval** *(bool=True)*: Determines the size of the BM-25 corpus used.
         If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode).  
-    
-    ## Input:  
-    
-    - **Input 1** *(shapes)*:  
-    
-    ## Output:  
-    
-    - **Output 1** *(shapes)*:  
+        If False, the corpus is built from the complete dataset (inference mode).   
     """
     def __init__(self, path_to_weights: PathOrStr, data: BaseData, eval: bool = True):
         self.data = data
@@ -55,6 +47,7 @@ class Evaluator:
         logger.info(self.model.settings)
 
         # instantiate examples, corpus and bm25 depending on mode
+        # TODO: Remove duplicates from corpus
         logger.info(f"Creating corpus in eval={eval} mode.")
         if eval:
             self.examples = data.test.examples
@@ -68,7 +61,21 @@ class Evaluator:
             self.bm25 = BM25(self.corpus)
 
     #TODO: Document
-    def _get_bm_top(self, query: Stringlike) -> List[Tuple[float, str]]:
+    def _get_bm_top(self, query: Stringlike) -> List[int]:
+        """
+        Uses BM-25 to compute the most similar titles in the corpus given a query. 
+        The query can either be passed as string or a list of strings (tokenized string). 
+        Returns a list of ints corresponding to the indices of the most similar corpus titles. 
+        A maximum number of 2048 indices is returned. Only indices with similarity values > 0 are returned.  
+
+        ## Parameters:  
+    
+        - **query** *(Stringlike)*: Query in string or tokenized form. 
+
+        ## Output:  
+        
+        - **indices** *(List[int])*: List of corpus indices with the highest similary rating to the query.   
+        """
         if isinstance(query, str): query = self.context.tokenize(query)
 
         # sort titles according to score and return indices
@@ -83,7 +90,19 @@ class Evaluator:
             return [index for _, index in scores]
 
     # TODO: Document
-    def recall(self, x: Intlike):
+    def recall(self, x: Intlike) -> Union[float, List[float]]:
+        """
+        Computes recall @x metric on the test set for model evaluation purposes.  
+        
+        ## Parameters:  
+        * *(shapes)
+        - **x** *(Intlike)*: Specifies at which level the recall is computed. 
+            If a list is passed, the recall is calculated for each in in the list and returned as list of floats. 
+        
+        ## Output:  
+        
+        - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
+        """
         if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
 
         if isinstance(x, int):
@@ -140,6 +159,7 @@ class Evaluator:
                 if titles.shape[1] - 1 in index: 
                     scored += 1
             
+            # FIXME: Actually compute recall here
             return scored / len(self.data.test)
 
         elif isinstance(x, list):
@@ -150,6 +170,7 @@ class Evaluator:
 
     # TODO: For a query return the best citation context. Need to preprocess with context field first
     # Join top 5 titles and use dict to map back to titles
+    # should have option to return attentions somehow
     def recommend(self, query: str, top_x: int = 5):
         if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         q = self.data.cntxt.tokenize(query)

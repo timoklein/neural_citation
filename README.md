@@ -14,6 +14,13 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Number of __citing authors__: __28200__.  
 * Number of __cited authors__: __169236__.  
 
+## Questions  
+
+* Remove duplicates from corpus? [might affect recall!]  
+* Check on if loss is calculated correctly [conditioned on true prior value]  
+* Presentation: 50/50 Split between powerpoint theory and jupyter part. 
+     Jupyter part: data preprocessing specifics, attention, parameters, inference, documentation.  
+
 ## Hyperparamters  
 
 * Using author information = __True__
