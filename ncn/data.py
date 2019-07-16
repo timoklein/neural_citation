@@ -6,7 +6,7 @@ import string
 import spacy
 from tqdm import tqdm
 from pathlib import Path
-from typing import Union, Collection, List, Dict
+from typing import Union, Collection, List, Dict, Tuple
 from collections import Counter
 from functools import partial
 from pandas import DataFrame
@@ -297,7 +297,7 @@ def author_preprocessing(text: str) -> List[str]:
         return text
 
 
-def get_fields():
+def get_fields() -> Tuple[Field, Field, Field]:
     """
     Initializer for the torchtext Field objects used to numericalize textual data.  
     

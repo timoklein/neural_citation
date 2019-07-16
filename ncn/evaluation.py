@@ -67,6 +67,7 @@ class Evaluator:
             self.corpus = [example.title_cited for example in self.examples]
             self.bm25 = BM25(self.corpus)
 
+    #TODO: Document
     def _get_bm_top(self, query: Stringlike) -> List[Tuple[float, str]]:
         if isinstance(query, str): query = self.context.tokenize(query)
 
@@ -81,7 +82,7 @@ class Evaluator:
         except IndexError:
             return [index for _, index in scores]
 
-
+    # TODO: Document
     def recall(self, x: Intlike):
         if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
 
@@ -148,6 +149,7 @@ class Evaluator:
         
 
     # TODO: For a query return the best citation context. Need to preprocess with context field first
+    # Join top 5 titles and use dict to map back to titles
     def recommend(self, query: str, top_x: int = 5):
         if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         q = self.data.cntxt.tokenize(query)

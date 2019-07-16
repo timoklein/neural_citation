@@ -11,7 +11,7 @@ from ncn.core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
-# TODO: Add batchnorm back into encoder, it's good!
+
 class TDNN(nn.Module):
     """
     Single TDNN Block for the neural citation network.

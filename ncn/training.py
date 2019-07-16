@@ -190,8 +190,8 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
     """
     save_dir = Path(save_dir)
 
-    flag_first_cycle = True
-    flag_second_cycle = True
+    flag_first_cycle = False
+    flag_second_cycle = False
 
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
