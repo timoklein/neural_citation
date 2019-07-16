@@ -15,8 +15,11 @@ PathOrStr = Union[Path, str]
 Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
-Ints = Union[int, List[int]]
+Intlike = Union[int, List[int]]
 """Single integer or list of integers for evaluating recall."""
+
+Stringlike = Union[str, List[str]]
+"""Single string or list of strings for evaluating recall."""
 
 class IteratorData(NamedTuple):
     """ Container holding the iterators needed to train the NCN model."""

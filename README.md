@@ -37,6 +37,6 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Gradient clipping = __5.0__  
 
 ## Experiment results  
-* Use of Batchnorm: Degrades model test loss substantially.  
+* Batchnorm in TDNN: Speeds up convergence.   
 * Custom initialization: TBD  
 * More TDNNs: TBD  
