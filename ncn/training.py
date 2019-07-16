@@ -207,7 +207,6 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
     training_settings = (
         "\nTRAINING SETTINGS"
         f"\nSeed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}"
-        "\n-------------------------------------------------"
     )
     settings = (model.settings + training_settings)
 
@@ -232,7 +231,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
             if not save_dir.exists(): save_dir.mkdir()
             torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
             with open(save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_settings.txt", "w") as file:
-                file.write(settings + f"Valid loss = {valid_loss}")
+                file.write(settings + f", Valid loss = {valid_loss}")
         
         logger.info(f"Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s")
         logger.info(f"\tTrain Loss: {train_loss:.3f}")

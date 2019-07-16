@@ -31,7 +31,7 @@ class Evaluator:
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
-        logger.info(model.settings)
+        logger.info(self.model.settings)
 
         # instantiate examples, corpus and bm25 depending on mode
         logger.info(f"Creating corpus in eval={eval} mode.")
@@ -39,12 +39,12 @@ class Evaluator:
             self.examples = data.test.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
             self.corpus = [example.title_cited for example in self.examples]
-            self.bm25 = BM25(corpus)
+            self.bm25 = BM25(self.corpus)
         else:
             self.examples = data.train.examples + data.train.examples+ data.train.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
             self.corpus = [example.title_cited for example in self.examples]
-            self.bm25 = BM25(corpus)
+            self.bm25 = BM25(self.corpus)
 
     def _get_bm_top(self, query: str) -> List[Tuple[float, str]]:
         q = self.context.tokenize(query)

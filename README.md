@@ -35,3 +35,8 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Learning rate = __0.01__  
 * Dropout = __0.2__  
 * Gradient clipping = __5.0__  
+
+## Experiment results  
+* Use of Batchnorm: Degrades model test loss substantially.  
+* Custom initialization: TBD  
+* More TDNNs: TBD  
