@@ -17,7 +17,7 @@ from torchtext.data import BucketIterator
 
 import ncn.core
 from ncn.core import DEVICE, SEED, PathOrStr
-from ncn.data_utils import get_bucketized_iterators
+from ncn.data import get_bucketized_iterators
 from ncn.model import NeuralCitationNetwork
 
 logger = logging.getLogger("neural_citation.train")
@@ -206,7 +206,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
 
     training_settings = (
         "\nTRAINING SETTINGS"
-        f"Seed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}"
+        f"\nSeed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}"
         "\n-------------------------------------------------"
     )
     settings = (model.settings + training_settings)
