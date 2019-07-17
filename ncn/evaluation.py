@@ -20,7 +20,7 @@ logger = logging.getLogger("neural_citation.inference")
 class Evaluator:
     """
     Evaluator class for the neural citation network. Uses a trained NCN model and BM-25 to perform
-    evaluation tasks (recall @ x) or inference. 
+    evaluation tasks on the test set or inference on the full dataset. 
     
     ## Parameters:  
     

@@ -16,10 +16,13 @@ https://github.com/tebesu/NeuralCitationNetwork.
 
 ## Questions  
 
-* Remove duplicates from corpus? [might affect recall!]  
-* Check on if loss is calculated correctly [conditioned on true prior value]  
+* Remove duplicates from corpus? [might affect recall!]  unique!  
+* Check on if loss is calculated correctly [conditioned on true prior value]  True prior!  
 * Presentation: 50/50 Split between powerpoint theory and jupyter part. 
-     Jupyter part: data preprocessing specifics, attention, parameters, inference, documentation.  
+     Jupyter part: data preprocessing specifics, attention, parameters, inference, documentation.
+     Schwerpunkte: Motivation (warum das Modell, charakteristika), Approach, Attention, Recall,
+        Losses (batchnorm vs nicht), keine Hyperparameter, Beispiel im Notebook 
+        Datensatz (grobe Statistiken, Anzahl)
 
 ## Hyperparamters  
 

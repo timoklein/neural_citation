@@ -171,7 +171,7 @@ class NCNEncoder(nn.Module):
         
         - **context** *(batch size, seq_length)*: 
             Tensor containing a batch of context indices.  
-        - **authors_citing=None** *(batch size, seq_length):
+        - **authors_citing=None** *(batch size, seq_length)*:
             Tensor containing a batch of citing author indices.  
         - **authors_cited=None** *(batch size, seq_length)*: 
             Tensor containing a batch of cited author indices.
