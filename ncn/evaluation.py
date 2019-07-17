@@ -123,7 +123,7 @@ class Evaluator:
                 citing = citing.to(DEVICE)
 
                 top_titles = self._get_bm_top(example.context)
-                top_authors = [self.title_aut_cited[title] for tuple(title) in top_titles]
+                top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
                 
                 # concat with true citations for context if not already selecte
                 indices = self.context_cited_indices[tuple(example.context)]
@@ -168,11 +168,14 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
+                logger.debug(f"Index: {index}")
+                logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
+
                 scored = 0
                 for i in append_count:
                     if len(top_titles) - (i + 1) in index: scored += 1
                 
-                scores.append(scored/x)
+                scores.append(scored/append_count)
 
             return sum(scored) / len(self.data.test)
 
@@ -187,5 +190,5 @@ class Evaluator:
     def recommend(self, query: str, top_x: int = 5):
         if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         q = self.data.cntxt.tokenize(query)
-        # get indices
-        # return top x
+        
+        # map titles to authors, score and return top x
