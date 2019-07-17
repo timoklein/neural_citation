@@ -5,6 +5,7 @@ from operator import itemgetter
 import warnings
 from typing import OrderedDict, Tuple, List, Union
 
+import pandas as pd
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -63,7 +64,7 @@ class Evaluator:
             
             # load mapping to give proper recommendations
             with open("assets/title_tokenized_to_full", "rb") as fp:
-                self.context_cited_indices = json.load(fp)
+                self.title_to_full = json.load(fp)
 
         # load mapping dictionaries for inference
         with open("assets/context_to_cited_indices.pkl", "rb") as fp:
@@ -72,7 +73,7 @@ class Evaluator:
             self.title_aut_cited = pickle.load(fp)
 
 
-    def _get_bm_top(self, query: Stringlike) -> List[List[str]]:
+    def _get_bm_top(self, query: List[str]) -> List[List[str]]:
         """
         Uses BM-25 to compute the most similar titles in the corpus given a query. 
         The query can either be passed as string or a list of strings (tokenized string). 
@@ -87,8 +88,6 @@ class Evaluator:
         
         - **indices** *(List[int])*: List of corpus indices with the highest similary rating to the query.   
         """
-        if isinstance(query, str): query = self.context.tokenize(query)
-
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
         scores = sorted(scores, key=itemgetter(0), reverse=True)
@@ -187,8 +186,53 @@ class Evaluator:
     # TODO: For a query return the best citation context. Need to preprocess with context field first
     # Join top 5 titles and use dict to map back to titles
     # should have option to return attentions somehow
-    def recommend(self, query: str, top_x: int = 5):
+    def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
-        q = self.data.cntxt.tokenize(query)
         
-        # map titles to authors, score and return top x
+        if isinstance(query, str): 
+            query = self.context.tokenize(query)
+        if isinstance(citing, str):
+            citing = self.authors.tokenize(citing)
+
+         
+
+        top_titles = self._get_bm_top(query)
+        top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
+        assert len(top_authors) == len(top_titles), "Evaluation title and author lengths don't match!"
+
+        context = self.context.numericalize([query])
+        citing = self.context.numericalize([citing])
+        context = context.to(DEVICE)
+        citing = citing.to(DEVICE)
+
+        # prepare batches
+        citeds = self.authors.numericalize(self.authors.pad(top_authors))
+        titles = self.title.numericalize(self.title.pad(top_titles))
+        citeds = citeds.to(DEVICE)
+        titles = titles.to(DEVICE)
+
+        # repeat context and citing to len(indices) and calculate loss for single, large batch
+        context = context.repeat(len(top_titles), 1)
+        citing = citing.repeat(len(top_titles), 1)
+        msg = "Evaluation batch sizes don't match!"
+        assert context.shape[0] == citing.shape[0] == citeds.shape[0] == titles.shape[1], msg
+
+        # calculate scores
+        output = self.model(context = context, title = titles, authors_citing = citing, authors_cited = citeds)
+        output = output[1:].view(-1, output.shape[-1])
+        titles = titles[1:].view(-1)
+
+
+        scores = self.criterion(output, titles)
+        _, index = scores.topk(top_x, largest=False, sorted=True, dim=0)
+
+        recommended = [top_titles[i] for i in index]
+        
+        return pd.DataFrame({i: self.title_to_full[title] for i, title in enumerate(recommended)}).transpose()
+
+        
+        
+
+
+
+        
