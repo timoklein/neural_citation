@@ -50,3 +50,4 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Batchnorm in TDNN: Seems to speed up convergence (todo: 2 end to end runs for comparison)  
 * Custom initialization: Doesn't seem like big improvement, torch defaults are very good. 
 * More TDNNs: TBD  
+* weight decay: TBD  

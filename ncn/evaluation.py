@@ -1,4 +1,6 @@
 import logging
+import json
+import pickle
 from operator import itemgetter
 import warnings
 from typing import OrderedDict, Tuple, List, Union
@@ -47,26 +49,35 @@ class Evaluator:
         logger.info(self.model.settings)
 
         # instantiate examples, corpus and bm25 depending on mode
-        # TODO: Remove duplicates from corpus
         logger.info(f"Creating corpus in eval={eval} mode.")
         if eval:
             self.examples = data.test.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
-            self.corpus = [example.title_cited for example in self.examples]
+            self.corpus = list(set([tuple(example.title_cited) for example in self.examples]))
             self.bm25 = BM25(self.corpus)
         else:
             self.examples = data.train.examples + data.train.examples+ data.train.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
-            self.corpus = [example.title_cited for example in self.examples]
+            self.corpus = list(set([tuple(example.title_cited) for example in self.examples]))
             self.bm25 = BM25(self.corpus)
+            
+            # load mapping to give proper recommendations
+            with open("assets/title_tokenized_to_full", "rb") as fp:
+                self.context_cited_indices = json.load(fp)
 
-    #TODO: Document
-    def _get_bm_top(self, query: Stringlike) -> List[int]:
+        # load mapping dictionaries for inference
+        with open("assets/context_to_cited_indices.pkl", "rb") as fp:
+            self.context_cited_indices = pickle.load(fp)
+        with open("assets/title_to_aut_cited.pkl", "rb") as fp:
+            self.title_aut_cited = pickle.load(fp)
+
+
+    def _get_bm_top(self, query: Stringlike) -> List[List[str]]:
         """
         Uses BM-25 to compute the most similar titles in the corpus given a query. 
         The query can either be passed as string or a list of strings (tokenized string). 
-        Returns a list of ints corresponding to the indices of the most similar corpus titles. 
-        A maximum number of 2048 indices is returned. Only indices with similarity values > 0 are returned.  
+        Returns the tokenized most similar corpus titles.
+        A maximum number of 2048 titles is returned. Only titles with similarity values > 0 are returned.  
 
         ## Parameters:  
     
@@ -79,17 +90,14 @@ class Evaluator:
         if isinstance(query, str): query = self.context.tokenize(query)
 
         # sort titles according to score and return indices
-        scores = [
-            (score, index) for index, score in enumerate(self.bm25.get_scores(query))
-            if self.bm25.get_score(query, index) > 0
-        ]
+        scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
         scores = sorted(scores, key=itemgetter(0), reverse=True)
         try:
-            return [index for _, index in scores][:2048]
+            return [title for score, title in scores if score > 0][:2048]
         except IndexError:
-            return [index for _, index in scores]
+            return [title for score, title in scores if score > 0]
 
-    # TODO: Document
+
     def recall(self, x: Intlike) -> Union[float, List[float]]:
         """
         Computes recall @x metric on the test set for model evaluation purposes.  
@@ -104,9 +112,9 @@ class Evaluator:
         - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
         """
         if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
-
+        
+        scores = []
         if isinstance(x, int):
-            scored = 0
             for example in self.data.test:
                 # numericalize query
                 context = self.context.numericalize([example.context])
@@ -114,26 +122,33 @@ class Evaluator:
                 context = context.to(DEVICE)
                 citing = citing.to(DEVICE)
 
-                indices = self._get_bm_top(example.context)
-                # get titles, cited authors with top indices and concatenate with true citation
-                candidate_authors = [self.examples[i].authors_cited for i in indices]
-                candidate_authors.append(example.authors_cited)
-                candidate_titles = [self.examples[i].title_cited for i in indices]
-                candidate_titles.append(example.title_cited)
+                top_titles = self._get_bm_top(example.context)
+                top_authors = [self.title_aut_cited[title] for tuple(title) in top_titles]
+                
+                # concat with true citations for context if not already selecte
+                indices = self.context_cited_indices[tuple(example.context)]
+                append_count = 0
+                for i in indices:
+                    if self.examples[i].title_cited not in top_titles: 
+                        top_titles.append(self.examples[i].title_cited)
+                        top_authors.append(self.examples[i].authors_cited)
+                        append_count += 1
 
-                logger.debug(f"Number of candidate authors {len(candidate_authors)}.")
-                logger.debug(f"Number of candidate titles {len(candidate_titles)}.")
-                assert len(candidate_authors) == len(candidate_titles), "Evaluation title and author lengths don't match!"
+                
+
+                logger.debug(f"Number of candidate authors {len(top_authors)}.")
+                logger.debug(f"Number of candidate titles {len(top_titles)}.")
+                assert len(top_authors) == len(top_titles), "Evaluation title and author lengths don't match!"
 
                 # prepare batches
-                citeds = self.authors.numericalize(self.authors.pad(candidate_authors))
-                titles = self.title.numericalize(self.title.pad(candidate_titles))
+                citeds = self.authors.numericalize(self.authors.pad(top_authors))
+                titles = self.title.numericalize(self.title.pad(top_titles))
                 citeds = citeds.to(DEVICE)
                 titles = titles.to(DEVICE)
 
                 # repeat context and citing to len(indices) and calculate loss for single, large batch
-                context = context.repeat(len(candidate_titles), 1)
-                citing = citing.repeat(len(candidate_titles), 1)
+                context = context.repeat(len(top_titles), 1)
+                citing = citing.repeat(len(top_titles), 1)
                 msg = "Evaluation batch sizes don't match!"
                 assert context.shape[0] == citing.shape[0] == citeds.shape[0] == titles.shape[1], msg
 
@@ -153,17 +168,15 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
-                logger.debug(index)
-                logger.debug(titles.shape[1] - 1)
+                scored = 0
+                for i in append_count:
+                    if len(top_titles) - (i + 1) in index: scored += 1
+                
+                scores.append(scored/x)
 
-                if titles.shape[1] - 1 in index: 
-                    scored += 1
-            
-            # FIXME: Actually compute recall here
-            return scored / len(self.data.test)
+            return sum(scored) / len(self.data.test)
 
         elif isinstance(x, list):
-            scores = []
             for at_x in x:
                 scored = 0
         
