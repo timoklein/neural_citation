@@ -33,7 +33,8 @@ class Evaluator:
         If True, only the test samples will be used (model evaluation mode).
         If False, the corpus is built from the complete dataset (inference mode).   
     """
-    def __init__(self, path_to_weights: PathOrStr, data: BaseData, evaluate: bool = True):
+    def __init__(self, path_to_weights: PathOrStr, data: BaseData, 
+                 evaluate: bool = True, show_attention: bool = False):
         self.data = data
         self.context, self.title, self.authors = self.data.cntxt, self.data.ttl, self.data.aut
         pad = self.title.vocab.stoi['<pad>']
@@ -42,13 +43,15 @@ class Evaluator:
         # instantiating model like this is bad, pass as params?
         self.model = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=len(self.context.vocab),
                                 authors=True, author_filters=[1,2], author_vocab_size=len(self.authors.vocab),
-                                title_vocab_size=len(self.title.vocab), pad_idx=pad, num_layers=2)
+                                title_vocab_size=len(self.title.vocab), pad_idx=pad, 
+                                num_layers=2, show_attention=show_attention)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
         logger.info(self.model.settings)
 
         self.eval = evaluate
+        self.show_attention = show_attention
 
         # instantiate examples, corpus and bm25 depending on mode
         logger.info(f"Creating corpus in eval={self.eval} mode.")
@@ -114,8 +117,7 @@ class Evaluator:
         
         ## Parameters:  
         * *(shapes)
-        - **x** *(Intlike)*: Specifies at which level the recall is computed. 
-            If a list is passed, the recall is calculated for each in in the list and returned as list of floats. 
+        - **x** *(int)*: Specifies at which level the recall is computed.  
         
         ## Output:  
         
@@ -191,8 +193,6 @@ class Evaluator:
 
             return sum(scored) / len(self.data.test)
         
-
-    # TODO: Return attentions
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         
@@ -228,7 +228,12 @@ class Evaluator:
             assert context.shape[0] == citing.shape[0] == citeds.shape[0] == titles.shape[1], msg
 
             # calculate scores
-            output = self.model(context = context, title = titles, authors_citing = citing, authors_cited = citeds)
+            if self.show_attention:
+                output, attention = self.model(context = context, title = titles, 
+                                               authors_citing = citing, authors_cited = citeds)
+            else:
+                output = self.model(context = context, title = titles, 
+                                    authors_citing = citing, authors_cited = citeds)
             output = output[1:].permute(1,2,0)
             titles = titles[1:].permute(1,0)
 
@@ -242,6 +247,9 @@ class Evaluator:
 
             recommended = [" ".join(top_titles[i]) for i in index]
         
+        if self.show_attention:
+            return {i: self.title_to_full[title] for i, title in enumerate(recommended)}, attention
+
         return {i: self.title_to_full[title] for i, title in enumerate(recommended)}
 
         

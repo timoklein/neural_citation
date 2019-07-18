@@ -373,8 +373,8 @@ class NeuralCitationNetwork(nn.Module):
     - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
     - **num_layers** *(int=2)*: Number of GRU layers.  
     - **hidden_size** *(int=128)*: Dimension of the GRU hidden states.  
-    - **batch_size** *(int=32)*: Training batch size.  
     - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.  
     """
     def __init__(self, context_filters: Filters,
                        author_filters: Filters,
@@ -387,7 +387,6 @@ class NeuralCitationNetwork(nn.Module):
                        embed_size: int = 128,
                        num_layers: int = 2,
                        hidden_size: int = 128,
-                       batch_size: int = 32,
                        dropout_p: float = 0.2,
                        show_attention: bool = False):
         super().__init__()
@@ -457,7 +456,7 @@ class NeuralCitationNetwork(nn.Module):
     def count_parameters(self):
         """Calculates the number of trainable parameters.""" 
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-    
+    # TODO: Document attention shapes properly
     def forward(self, context, title, authors_citing=None, authors_cited=None,
                teacher_forcing_ratio: float = 1):
         """
@@ -482,6 +481,8 @@ class NeuralCitationNetwork(nn.Module):
         
         - **output** *(batch_size, title_vocab_len)*: 
             Tensor containing the predictions of the decoder.
+         **attentions** *(batch_size, title_vocab_len)*: 
+            Tensor containing the decoder attention states.
         """
         
         encoder_outputs = self.encoder(context, authors_citing, authors_cited)
