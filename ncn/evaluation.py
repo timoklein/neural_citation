@@ -16,7 +16,7 @@ import ncn.core
 from ncn.core import BaseData, Intlike, Stringlike, PathOrStr, DEVICE
 from ncn.model import NeuralCitationNetwork
 
-logger = logging.getLogger("neural_citation.inference")
+logger = logging.getLogger("neural_citation.evaluation")
 
 
 # TODO: Document this
@@ -30,15 +30,15 @@ class Evaluator:
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
     - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
         Also holds initialized context, title and author fields.  
-    - **eval** *(bool=True)*: Determines the size of the BM-25 corpus used.
+    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
         If True, only the test samples will be used (model evaluation mode).
         If False, the corpus is built from the complete dataset (inference mode).   
     """
-    def __init__(self, path_to_weights: PathOrStr, data: BaseData, eval: bool = True):
+    def __init__(self, path_to_weights: PathOrStr, data: BaseData, evaluate: bool = True):
         self.data = data
         self.context, self.title, self.authors = self.data.cntxt, self.data.ttl, self.data.aut
         pad = self.title.vocab.stoi['<pad>']
-        self.criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction=None)
+        self.criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="none")
 
         # instantiating model like this is bad, pass as params?
         self.model = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=len(self.context.vocab),
@@ -49,9 +49,11 @@ class Evaluator:
         self.model.eval()
         logger.info(self.model.settings)
 
+        self.eval = evaluate
+
         # instantiate examples, corpus and bm25 depending on mode
-        logger.info(f"Creating corpus in eval={eval} mode.")
-        if eval:
+        logger.info(f"Creating corpus in eval={self.evaluate} mode.")
+        if self.eval:
             self.examples = data.test.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
             self.corpus = list(set([tuple(example.title_cited) for example in self.examples]))
@@ -63,7 +65,7 @@ class Evaluator:
             self.bm25 = BM25(self.corpus)
             
             # load mapping to give proper recommendations
-            with open("assets/title_tokenized_to_full", "rb") as fp:
+            with open("assets/title_tokenized_to_full.json", "rb") as fp:
                 self.title_to_full = json.load(fp)
 
         # load mapping dictionaries for inference
@@ -91,8 +93,9 @@ class Evaluator:
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
         scores = sorted(scores, key=itemgetter(0), reverse=True)
+        # TODO: Reset to top 2048 again
         try:
-            return [title for score, title in scores if score > 0][:2048]
+            return [title for score, title in scores if score > 0][:48]
         except IndexError:
             return [title for score, title in scores if score > 0]
 
@@ -110,7 +113,7 @@ class Evaluator:
         
         - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
         """
-        if not eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
+        if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         
         scores = []
         if isinstance(x, int):
@@ -187,7 +190,7 @@ class Evaluator:
     # Join top 5 titles and use dict to map back to titles
     # should have option to return attentions somehow
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
-        if eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
+        if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         
         if isinstance(query, str): 
             query = self.context.tokenize(query)
@@ -195,40 +198,48 @@ class Evaluator:
             citing = self.authors.tokenize(citing)
 
          
+        with torch.no_grad():
+            top_titles = self._get_bm_top(query)
+            top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
+            assert len(top_authors) == len(top_titles), "Evaluation title and author lengths don't match!"
 
-        top_titles = self._get_bm_top(query)
-        top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
-        assert len(top_authors) == len(top_titles), "Evaluation title and author lengths don't match!"
+            context = self.context.numericalize([query])
+            citing = self.context.numericalize([citing])
+            context = context.to(DEVICE)
+            citing = citing.to(DEVICE)
 
-        context = self.context.numericalize([query])
-        citing = self.context.numericalize([citing])
-        context = context.to(DEVICE)
-        citing = citing.to(DEVICE)
+            # prepare batches
+            citeds = self.authors.numericalize(self.authors.pad(top_authors))
+            titles = self.title.numericalize(self.title.pad(top_titles))
+            citeds = citeds.to(DEVICE)
+            titles = titles.to(DEVICE)
 
-        # prepare batches
-        citeds = self.authors.numericalize(self.authors.pad(top_authors))
-        titles = self.title.numericalize(self.title.pad(top_titles))
-        citeds = citeds.to(DEVICE)
-        titles = titles.to(DEVICE)
+            logger.debug(f"Evaluation title shapes: {titles.shape}")
+            logger.debug(f"Batch type: {titles.type()}")
 
-        # repeat context and citing to len(indices) and calculate loss for single, large batch
-        context = context.repeat(len(top_titles), 1)
-        citing = citing.repeat(len(top_titles), 1)
-        msg = "Evaluation batch sizes don't match!"
-        assert context.shape[0] == citing.shape[0] == citeds.shape[0] == titles.shape[1], msg
+            # repeat context and citing to len(indices) and calculate loss for single, large batch
+            context = context.repeat(len(top_titles), 1)
+            citing = citing.repeat(len(top_titles), 1)
+            msg = "Evaluation batch sizes don't match!"
+            assert context.shape[0] == citing.shape[0] == citeds.shape[0] == titles.shape[1], msg
 
-        # calculate scores
-        output = self.model(context = context, title = titles, authors_citing = citing, authors_cited = citeds)
-        output = output[1:].view(-1, output.shape[-1])
-        titles = titles[1:].view(-1)
+            # calculate scores
+            output = self.model(context = context, title = titles, authors_citing = citing, authors_cited = citeds)
+            output = output[1:].permute(1,2,0)
+            titles = titles[1:].permute(1,0)
 
+            logger.debug(f"Evaluation output shapes: {output.shape}")
+            logger.debug(f"Evaluation title shapes: {titles.shape}")
 
-        scores = self.criterion(output, titles)
-        _, index = scores.topk(top_x, largest=False, sorted=True, dim=0)
+            scores = self.criterion(output, titles)
+            scores = torch.einsum("ij -> i", scores)
+            logger.debug(f"Evaluation scores shape: {scores.shape}")
+            _, index = scores.topk(top_x, largest=False, sorted=True, dim=0)
 
-        recommended = [top_titles[i] for i in index]
+            recommended = [" ".join(top_titles[i]) for i in index]
         
-        return pd.DataFrame({i: self.title_to_full[title] for i, title in enumerate(recommended)}).transpose()
+        return pd.DataFrame({f"top_{i+1}": self.title_to_full[title] for i, title in enumerate(recommended)},
+                             index=["Recommended Title"]).transpose()
 
         
         

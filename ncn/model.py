@@ -340,7 +340,7 @@ class Decoder(nn.Module):
         output = output.squeeze(0)
         weighted = weighted.squeeze(0)
         logger.debug(f"Hidden shape: {hidden.shape}")
-        logger.debug(f"Output shape: {output.shape}")
+        logger.debug(f"Decoder Output shape: {output.shape}")
         logger.debug(f"Weighted shape: {weighted.shape}")
         
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
@@ -496,6 +496,8 @@ class NeuralCitationNetwork(nn.Module):
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]
             output = (title[t] if teacher_force else top1)
+
+        logger.debug(f"Model output shape: {outputs.shape}")
 
         return outputs
 

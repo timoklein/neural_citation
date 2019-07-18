@@ -103,13 +103,13 @@ def train(model: nn.Module, iterator: BucketIterator,
         
         output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
         
-        #trg = [trg sent len, batch size]
+        #ttl = [trg sent len, batch size]
         #output = [trg sent len, batch size, output dim]
         
         output = output[1:].view(-1, output.shape[-1])
         ttl = ttl[1:].view(-1)
         
-        #trg = [(trg sent len - 1) * batch size]
+        #ttl = [(trg sent len - 1) * batch size]
         #output = [(trg sent len - 1) * batch size, output dim]
         
         loss = criterion(output, ttl)
