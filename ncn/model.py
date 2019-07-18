@@ -273,7 +273,7 @@ class Decoder(nn.Module):
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, attention: nn.Module):
+                 pad_idx: int, dropout_p: float, attention: nn.Module, show_attention: bool):
         super().__init__()
 
         self.embed_size = embed_size
@@ -282,6 +282,7 @@ class Decoder(nn.Module):
         self.title_vocab_size = title_vocab_size
         self.dropout_p = dropout_p
         self.attention = attention
+        self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
         
@@ -345,6 +346,9 @@ class Decoder(nn.Module):
         
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
         
+        if self.show_attention:
+            return output, hidden.squeeze(0), a.squeeze(1)
+
         return output, hidden.squeeze(0)
 
 
@@ -384,7 +388,8 @@ class NeuralCitationNetwork(nn.Module):
                        num_layers: int = 2,
                        hidden_size: int = 128,
                        batch_size: int = 32,
-                       dropout_p: float = 0.2):
+                       dropout_p: float = 0.2,
+                       show_attention: bool = False):
         super().__init__()
 
 
@@ -403,6 +408,7 @@ class NeuralCitationNetwork(nn.Module):
         self.num_layers = num_layers
 
         self.dropout_p = dropout_p
+        self.show_attention = show_attention
 
         # sanity check
         msg = (f"# Filters={self.num_filters}, Hidden dimension={self.hidden_size}, Embedding dimension={self.embed_size}"
@@ -431,7 +437,8 @@ class NeuralCitationNetwork(nn.Module):
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
-                               attention = self.attention)
+                               attention = self.attention,
+                               show_attention=self.show_attention)
         
 
         self.settings = (
@@ -443,7 +450,7 @@ class NeuralCitationNetwork(nn.Module):
             f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
             f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
             f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
-            f"\nParameters: Dropout = {self.dropout_p}"
+            f"\nParameters: Dropout = {self.dropout_p}, Show attention = {self.show_attention}"
             "\n-------------------------------------------------"
         )
 
@@ -483,15 +490,21 @@ class NeuralCitationNetwork(nn.Module):
         max_len = title.shape[0]
         
         #tensor to store decoder outputs
-        outputs = torch.zeros(max_len, batch_size, self.title_vocab_size).to(DEVICE)
-                
+        outputs = torch.zeros(max_len, batch_size, self.title_vocab_size).to(DEVICE)   
         #first input to the decoder is the <sos> tokens
         output = title[0,:]
+
+        if self.show_attention:
+            attentions = torch.zeros(max_len, batch_size, context.shape[0]).to(DEVICE)
         
         hidden= self.decoder.init_hidden(batch_size)
         
         for t in range(1, max_len):
-            output, hidden = self.decoder(output, hidden, encoder_outputs)
+            if self.show_attention:
+                output, hidden, attention = self.decoder(output, hidden, encoder_outputs)
+                attentions[t] = attention
+            else:
+                output, hidden = self.decoder(output, hidden, encoder_outputs)
             outputs[t] = output
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]
@@ -499,5 +512,8 @@ class NeuralCitationNetwork(nn.Module):
 
         logger.debug(f"Model output shape: {outputs.shape}")
 
+        if self.attention:
+            return outputs, attentions
+        
         return outputs
 

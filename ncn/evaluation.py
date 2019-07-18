@@ -103,7 +103,7 @@ class Evaluator:
                 return [title for score, title in scores if score > 0]
         else:
             try:
-                return [title for score, title in scores if score > 0][:256]
+                return [title for score, title in scores if score > 0][:1028]
             except IndexError:
                 return [title for score, title in scores if score > 0]
 
