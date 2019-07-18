@@ -101,7 +101,8 @@ class Evaluator:
         # Return top 2048 for evaluation purpose, cut to half for recommendations to prevent memory errors
         if self.eval:
             try:
-                return [title for score, title in scores if score > 0][:2048]
+                # TODO: Reset this to 2048 and run on server
+                return [title for score, title in scores if score > 0][:48]
             except IndexError:
                 return [title for score, title in scores if score > 0]
         else:
@@ -125,8 +126,8 @@ class Evaluator:
         """
         if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         
-        scores = []
-        if isinstance(x, int):
+        recall_list = []
+        with torch.no_grad():
             for example in self.data.test:
                 # numericalize query
                 context = self.context.numericalize([example.context])
@@ -137,7 +138,7 @@ class Evaluator:
                 top_titles = self._get_bm_top(example.context)
                 top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
                 
-                # concat with true citations for context if not already selecte
+                # TODO: We need a different mapping only within the test set
                 indices = self.context_cited_indices[tuple(example.context)]
                 append_count = 0
                 for i in indices:
@@ -185,13 +186,14 @@ class Evaluator:
                 logger.debug(f"Index: {index}")
                 logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
 
+                # check how many of the concatenated (=true) titles have been returned
                 scored = 0
-                for i in append_count:
+                for i in range(append_count):
                     if len(top_titles) - (i + 1) in index: scored += 1
                 
-                scores.append(scored/append_count)
+                recall_list.append(scored/append_count)
 
-            return sum(scored) / len(self.data.test)
+            return sum(recall_list) / len(self.data.test)
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
@@ -219,7 +221,6 @@ class Evaluator:
             titles = titles.to(DEVICE)
 
             logger.debug(f"Evaluation title shapes: {titles.shape}")
-            logger.debug(f"Batch type: {titles.type()}")
 
             # repeat context and citing to len(indices) and calculate loss for single, large batch
             context = context.repeat(len(top_titles), 1)
@@ -248,13 +249,8 @@ class Evaluator:
             recommended = [" ".join(top_titles[i]) for i in index]
         
         if self.show_attention:
-            return {i: self.title_to_full[title] for i, title in enumerate(recommended)}, attention
+            return {i: self.title_to_full[title] for i, title in enumerate(recommended)}, attention[:, index, :]
 
         return {i: self.title_to_full[title] for i, title in enumerate(recommended)}
-
-        
-        
-
-
 
         

@@ -496,13 +496,15 @@ class NeuralCitationNetwork(nn.Module):
         output = title[0,:]
 
         if self.show_attention:
-            attentions = torch.zeros(max_len, batch_size, context.shape[0]).to(DEVICE)
+            attentions = torch.zeros((max_len, batch_size, encoder_outputs.shape[0])).to(DEVICE)
+            logger.debug(f"Attentions viz shape: {attentions.shape}")
         
         hidden= self.decoder.init_hidden(batch_size)
         
         for t in range(1, max_len):
             if self.show_attention:
                 output, hidden, attention = self.decoder(output, hidden, encoder_outputs)
+                logger.debug(f"Attentions output shape: {attention.shape}")
                 attentions[t] = attention
             else:
                 output, hidden = self.decoder(output, hidden, encoder_outputs)
@@ -513,7 +515,7 @@ class NeuralCitationNetwork(nn.Module):
 
         logger.debug(f"Model output shape: {outputs.shape}")
 
-        if self.attention:
+        if self.show_attention:
             return outputs, attentions
         
         return outputs
