@@ -5,7 +5,6 @@ from operator import itemgetter
 import warnings
 from typing import OrderedDict, Tuple, List, Union
 
-import pandas as pd
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -13,7 +12,7 @@ from gensim.summarization.bm25 import BM25
 from torchtext.data import TabularDataset
 
 import ncn.core
-from ncn.core import BaseData, Intlike, Stringlike, PathOrStr, DEVICE
+from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE
 from ncn.model import NeuralCitationNetwork
 
 logger = logging.getLogger("neural_citation.evaluation")
@@ -52,7 +51,7 @@ class Evaluator:
         self.eval = evaluate
 
         # instantiate examples, corpus and bm25 depending on mode
-        logger.info(f"Creating corpus in eval={self.evaluate} mode.")
+        logger.info(f"Creating corpus in eval={self.eval} mode.")
         if self.eval:
             self.examples = data.test.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
@@ -80,7 +79,9 @@ class Evaluator:
         Uses BM-25 to compute the most similar titles in the corpus given a query. 
         The query can either be passed as string or a list of strings (tokenized string). 
         Returns the tokenized most similar corpus titles.
-        A maximum number of 2048 titles is returned. Only titles with similarity values > 0 are returned.  
+        Only titles with similarity values > 0 are returned.
+        A maximum number of 2048 titles is returned in eval mode. 
+        For recommendations, the top 256 titles are returned.  
 
         ## Parameters:  
     
@@ -93,14 +94,21 @@ class Evaluator:
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
         scores = sorted(scores, key=itemgetter(0), reverse=True)
-        # TODO: Reset to top 2048 again
-        try:
-            return [title for score, title in scores if score > 0][:48]
-        except IndexError:
-            return [title for score, title in scores if score > 0]
+
+        # Return top 2048 for evaluation purpose, cut to half for recommendations to prevent memory errors
+        if self.eval:
+            try:
+                return [title for score, title in scores if score > 0][:2048]
+            except IndexError:
+                return [title for score, title in scores if score > 0]
+        else:
+            try:
+                return [title for score, title in scores if score > 0][:256]
+            except IndexError:
+                return [title for score, title in scores if score > 0]
 
 
-    def recall(self, x: Intlike) -> Union[float, List[float]]:
+    def recall(self, x: int) -> Union[float, List[float]]:
         """
         Computes recall @x metric on the test set for model evaluation purposes.  
         
@@ -161,13 +169,15 @@ class Evaluator:
 
                 # calculate scores
                 output = self.model(context = context, title = titles, authors_citing = citing, authors_cited = citeds)
-                output = output[1:].view(-1, output.shape[-1])
-                titles = titles[1:].view(-1)
+                output = output[1:].permute(1,2,0)
+                titles = titles[1:].permute(1,0)
 
-                logger.debug(f"Output shape: {output.shape}")
-                logger.debug(f"Titles shape: {titles.shape}")
+                logger.debug(f"Evaluation output shapes: {output.shape}")
+                logger.debug(f"Evaluation title shapes: {titles.shape}")
 
                 scores = self.criterion(output, titles)
+                scores = scores.sum(dim=1)
+                logger.debug(f"Evaluation scores shape: {scores.shape}")
                 _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
                 logger.debug(f"Index: {index}")
@@ -180,15 +190,9 @@ class Evaluator:
                 scores.append(scored/append_count)
 
             return sum(scored) / len(self.data.test)
-
-        elif isinstance(x, list):
-            for at_x in x:
-                scored = 0
         
 
-    # TODO: For a query return the best citation context. Need to preprocess with context field first
-    # Join top 5 titles and use dict to map back to titles
-    # should have option to return attentions somehow
+    # TODO: Return attentions
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         
@@ -232,14 +236,13 @@ class Evaluator:
             logger.debug(f"Evaluation title shapes: {titles.shape}")
 
             scores = self.criterion(output, titles)
-            scores = torch.einsum("ij -> i", scores)
+            scores = scores.sum(dim=1)
             logger.debug(f"Evaluation scores shape: {scores.shape}")
             _, index = scores.topk(top_x, largest=False, sorted=True, dim=0)
 
             recommended = [" ".join(top_titles[i]) for i in index]
         
-        return pd.DataFrame({f"top_{i+1}": self.title_to_full[title] for i, title in enumerate(recommended)},
-                             index=["Recommended Title"]).transpose()
+        return {i: self.title_to_full[title] for i, title in enumerate(recommended)}
 
         
         

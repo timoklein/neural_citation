@@ -15,9 +15,6 @@ PathOrStr = Union[Path, str]
 Filters = List[int]
 """Custom data type representing a list of filter lengths."""
 
-Intlike = Union[int, List[int]]
-"""Single integer or list of integers for evaluating recall."""
-
 Stringlike = Union[str, List[str]]
 """Single string or list of strings for evaluating recall."""
 
@@ -100,7 +97,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # base logger for the ncn module
-logging.basicConfig(level=logging.DEBUG, style='$')
+logging.basicConfig(level=logging.INFO, style='$')
 logger = logging.getLogger("neural_citation")
 """
     Base logger for the neural citation package.
