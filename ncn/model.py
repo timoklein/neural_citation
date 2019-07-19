@@ -33,7 +33,6 @@ class TDNN(nn.Module):
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         # no bias to avoid accumulating biases on padding
         self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=False)
-        self.bn = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
         """
@@ -54,7 +53,7 @@ class TDNN(nn.Module):
 
 
         # output shape: batch_size, num_filters, 1, f(seq length)
-        x = self.bn(F.relu(self.conv(x)))
+        x = F.relu(self.conv(x))
         pool_size = x.shape[-1]
 
         # output shape: batch_size, num_filters, 1, 1
@@ -88,7 +87,6 @@ class TDNNEncoder(nn.Module):
         self.encoder = nn.ModuleList([TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
                                         for f in self.filter_list])
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
-        self.bn = nn.BatchNorm1d(self._num_filters_total)
 
 
     def forward(self, x):
@@ -117,7 +115,7 @@ class TDNNEncoder(nn.Module):
         logger.debug(f"x shape: {x.shape}")
 
         # apply nonlinear mapping
-        x = self.bn(torch.tanh(self.fc(x)))
+        x = torch.tanh(self.fc(x))
 
         # output shape: list_length, batch_size, num_filters
         return x.view(len(self.filter_list), -1, self.num_filters)

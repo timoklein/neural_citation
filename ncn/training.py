@@ -165,8 +165,6 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
             loss = criterion(output, ttl)
 
             epoch_loss += loss.item()
-
-    model.train()
         
     return epoch_loss / len(iterator)
 

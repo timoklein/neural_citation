@@ -3,13 +3,14 @@ import json
 import pickle
 from operator import itemgetter
 import warnings
-from typing import OrderedDict, Tuple, List, Union
+from typing import Dict, Tuple, List, Union
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 from gensim.summarization.bm25 import BM25
 from torchtext.data import TabularDataset
+from tqdm import tqdm_notebook
 
 import ncn.core
 from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE
@@ -37,13 +38,13 @@ class Evaluator:
                  evaluate: bool = True, show_attention: bool = False):
         self.data = data
         self.context, self.title, self.authors = self.data.cntxt, self.data.ttl, self.data.aut
-        pad = self.title.vocab.stoi['<pad>']
-        self.criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="none")
+        self.pad = self.title.vocab.stoi['<pad>']
+        self.criterion = nn.CrossEntropyLoss(ignore_index = self.pad, reduction="none")
 
         # instantiating model like this is bad, pass as params?
         self.model = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=len(self.context.vocab),
                                 authors=True, author_filters=[1,2], author_vocab_size=len(self.authors.vocab),
-                                title_vocab_size=len(self.title.vocab), pad_idx=pad, 
+                                title_vocab_size=len(self.title.vocab), pad_idx=self.pad, 
                                 num_layers=2, show_attention=show_attention)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
@@ -60,6 +61,7 @@ class Evaluator:
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
             self.corpus = list(set([tuple(example.title_cited) for example in self.examples]))
             self.bm25 = BM25(self.corpus)
+            self.context_cited_indices = self._get_context_title_indices(self.examples)
         else:
             self.examples = data.train.examples + data.train.examples+ data.train.examples
             logger.info(f"Number of samples in BM25 corpus: {len(self.examples)}")
@@ -69,13 +71,25 @@ class Evaluator:
             # load mapping to give proper recommendations
             with open("assets/title_tokenized_to_full.json", "rb") as fp:
                 self.title_to_full = json.load(fp)
+            # load mapping dictionaries for inference
+            with open("assets/context_to_cited_indices.pkl", "rb") as fp:
+                self.context_cited_indices = pickle.load(fp)
 
-        # load mapping dictionaries for inference
-        with open("assets/context_to_cited_indices.pkl", "rb") as fp:
-            self.context_cited_indices = pickle.load(fp)
+        
         with open("assets/title_to_aut_cited.pkl", "rb") as fp:
             self.title_aut_cited = pickle.load(fp)
 
+    @staticmethod
+    def _get_context_title_indices(examples: List) -> Dict[Tuple[str, ...], List[str]]:
+        mapping = {}
+        for i, example in enumerate(examples):
+            key = tuple(example.context)
+            if key not in mapping.keys():
+                mapping[key] = [i]
+            else:
+                mapping[key].append(i)
+        
+        return mapping
 
     def _get_bm_top(self, query: List[str]) -> List[List[str]]:
         """
@@ -128,17 +142,28 @@ class Evaluator:
         
         recall_list = []
         with torch.no_grad():
-            for example in self.data.test:
+            for example in tqdm_notebook(self.data.test, desc= "Calculating recall"):
                 # numericalize query
                 context = self.context.numericalize([example.context])
                 citing = self.context.numericalize([example.authors_citing])
                 context = context.to(DEVICE)
                 citing = citing.to(DEVICE)
 
+                # catch contexts and citings shorter than filter lengths and pad manually
+                if context.shape[1] < 5:
+                    assert self.pad == 1, "Padding index doesn't match tensor index!"
+                    padded = torch.ones((1,5), dtype=torch.long)
+                    padded[:, :context.shape[1]] = context
+                    context = padded.to(DEVICE)
+                if citing.shape[1] < 2:
+                    padded = torch.ones((1,2), dtype=torch.long)
+                    padded[:, :citing.shape[1]] = citing
+                    citing = padded.to(DEVICE)
+
                 top_titles = self._get_bm_top(example.context)
                 top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
                 
-                # TODO: We need a different mapping only within the test set
+                # add all true cited titles (can be multiple per context)
                 indices = self.context_cited_indices[tuple(example.context)]
                 append_count = 0
                 for i in indices:
@@ -181,7 +206,10 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 scores = scores.sum(dim=1)
                 logger.debug(f"Evaluation scores shape: {scores.shape}")
-                _, index = scores.topk(x, largest=False, sorted=True, dim=0)
+                try:
+                    _, index = scores.topk(x, largest=False, sorted=True, dim=0)
+                except:
+                    continue
 
                 logger.debug(f"Index: {index}")
                 logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
