@@ -85,8 +85,8 @@ class TDNNEncoder(nn.Module):
         self.num_filters = num_filters
         self._num_filters_total = len(filters)*num_filters
 
-        self.encoder = [TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
-                                for f in self.filter_list]
+        self.encoder = nn.ModuleList([TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
+                                        for f in self.filter_list])
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
 
 
@@ -256,7 +256,7 @@ class Attention(nn.Module):
         return torch.softmax(attention, dim=1)
 
 
-# TODO: Create option to return attentions
+
 class Decoder(nn.Module):
     """
     Attention decoder for a Seq2Seq model. Uses a GRU layer as recurrent unit.  

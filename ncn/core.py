@@ -83,7 +83,7 @@ STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
 MAX_TITLE_LENGTH = 40
 """Maximum decoder sequence length. Also determines the number of attention weights."""
 
-MAX_CONTEXT_LENGTH = 100
+MAX_CONTEXT_LENGTH = 60
 """Maximum encoder sequence length."""
 
 MAX_AUTHORS = 7
