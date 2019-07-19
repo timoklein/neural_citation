@@ -1,7 +1,17 @@
-# Deep citation recommendation
-PyTorch reimplementation of the neural citation network.
-Authors original code can be found here:  
+# Neural Citation Network  
+PyTorch reimplementation of the neural citation network.  
+
+Author's source code:  
 https://github.com/tebesu/NeuralCitationNetwork. 
+
+Travis Ebesu, Yi Fang. Neural Citation Network for Context-Aware Citation Recommendation. In Proceedings of the 40th International ACM SIGIR Conference on Research and Development in Information Retrieval, 2017. PDF
+
+
+## Getting started
+
+
+## Data
+
 
 ## Stats  
 
@@ -14,15 +24,6 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Number of __citing authors__: __28200__.  
 * Number of __cited authors__: __169236__.  
 
-## Questions  
-
-* Remove duplicates from corpus? [might affect recall!]  unique!  
-* Check on if loss is calculated correctly [conditioned on true prior value]  True prior!  
-* Presentation: 50/50 Split between powerpoint theory and jupyter part. 
-     Jupyter part: data preprocessing specifics, attention, parameters, inference, documentation.
-     Schwerpunkte: Motivation (warum das Modell, charakteristika), Approach, Attention, Recall,
-        Losses (batchnorm vs nicht), keine Hyperparameter, Beispiel im Notebook 
-        Datensatz (grobe Statistiken, Anzahl)
 
 ## Hyperparamters  
 
@@ -30,7 +31,7 @@ https://github.com/tebesu/NeuralCitationNetwork.
 * Epochs = __10__  
 * Batch size = __64__  
 * GRU Hidden size = __128__  
-* Recurrent layers # = __1__  
+* Recurrent layers # = __2__  
 * Context filter sizes = __[4, 4, 5]__  
 * Context # filters = __128__   
 * Context embedding size = __128__  

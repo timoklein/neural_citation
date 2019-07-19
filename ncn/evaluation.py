@@ -206,10 +206,7 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 scores = scores.sum(dim=1)
                 logger.debug(f"Evaluation scores shape: {scores.shape}")
-                try:
-                    _, index = scores.topk(x, largest=False, sorted=True, dim=0)
-                except:
-                    continue
+                _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
                 logger.debug(f"Index: {index}")
                 logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
