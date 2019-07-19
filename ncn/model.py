@@ -88,6 +88,7 @@ class TDNNEncoder(nn.Module):
         self.encoder = nn.ModuleList([TDNN(filter_size=f, embed_size = embed_size, num_filters=num_filters).to(DEVICE) 
                                         for f in self.filter_list])
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
+        self.bn = nn.BatchNorm1d(self._num_filters_total)
 
 
     def forward(self, x):
@@ -116,7 +117,7 @@ class TDNNEncoder(nn.Module):
         logger.debug(f"x shape: {x.shape}")
 
         # apply nonlinear mapping
-        x = torch.tanh(self.fc(x))
+        x = self.bn(torch.tanh(self.fc(x)))
 
         # output shape: list_length, batch_size, num_filters
         return x.view(len(self.filter_list), -1, self.num_filters)
