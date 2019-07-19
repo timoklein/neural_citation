@@ -4,6 +4,7 @@ import logging
 import json
 import string
 import spacy
+import random
 from tqdm import tqdm
 from pathlib import Path
 from typing import Union, Collection, List, Dict, Tuple
@@ -16,7 +17,7 @@ from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
 import ncn.core
 from ncn.core import PathOrStr, IteratorData, BaseData
-from ncn.core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS
+from ncn.core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, SEED
 
 
 
@@ -346,6 +347,10 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     - **data** *(BaseData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
         train (*TabularDataset*), valid (*TabularDataset*), test (*TabularDataset*) objects.
     """
+    # set the seed for the data split
+    random.seed(SEED)
+    state = random.getstate()
+
     logger.info("Getting fields...")
     CNTXT, TTL, AUT = get_fields()
     # generate torchtext dataset from a .csv given the fields for each datatype
@@ -362,7 +367,7 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     CNTXT.build_vocab(dataset, max_size=30000)
 
     # split dataset
-    train, valid, test = dataset.split([0.7,0.2,0.1])
+    train, valid, test = dataset.split([0.7,0.2,0.1], random_state = state)
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 
