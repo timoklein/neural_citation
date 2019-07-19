@@ -35,7 +35,7 @@ Travis Ebesu, Yi Fang. Neural Citation Network for Context-Aware Citation Recomm
 * Context filter sizes = __[4, 4, 5]__  
 * Context # filters = __128__   
 * Context embedding size = __128__  
-* Maximum context length = __100__  
+* Maximum context length = __60__  
 * Author filter sizes = __[1, 2]__  
 * Authors # filters = __128__  
 * Author embedding size = __128__  
@@ -43,12 +43,7 @@ Travis Ebesu, Yi Fang. Neural Citation Network for Context-Aware Citation Recomm
 * Title embedding size = __128__  
 * Maximum title length = __40__  
 * Optimizer = __ADAM__  
-* Learning rate = __0.01__  
+* Learning rate = __0.001__  
 * Dropout = __0.2__  
 * Gradient clipping = __5.0__  
 
-## Experiment results  
-* Batchnorm in TDNN: Seems to speed up convergence (todo: 2 end to end runs for comparison)  
-* Custom initialization: Doesn't seem like big improvement, torch defaults are very good. 
-* More TDNNs: TBD  
-* weight decay: Degrades performance as we already use batchnorm & dropout to regularize.

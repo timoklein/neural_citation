@@ -367,7 +367,7 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     CNTXT.build_vocab(dataset, max_size=30000)
 
     # split dataset
-    train, valid, test = dataset.split([0.7,0.2,0.1], random_state = state)
+    train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 

@@ -141,6 +141,7 @@ class Evaluator:
         if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         
         recall_list = []
+        counter = 0
         with torch.no_grad():
             for example in tqdm_notebook(self.data.test, desc= "Calculating recall"):
                 # numericalize query
@@ -206,7 +207,11 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 scores = scores.sum(dim=1)
                 logger.debug(f"Evaluation scores shape: {scores.shape}")
-                _, index = scores.topk(x, largest=False, sorted=True, dim=0)
+                try:
+                    _, index = scores.topk(x, largest=False, sorted=True, dim=0)
+                    counter += 1
+                except RuntimeError:
+                    continue
 
                 logger.debug(f"Index: {index}")
                 logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
@@ -218,7 +223,7 @@ class Evaluator:
                 
                 recall_list.append(scored/append_count)
 
-            return sum(recall_list) / len(self.data.test)
+            return sum(recall_list) / counter
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
