@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm_notebook, tnrange
-from typing import Tuple
+from typing import List, Tuple
 
 import torch
 from torch import nn
@@ -173,7 +173,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
 
 def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
                 n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
-                save_dir: PathOrStr = "./models") -> None:
+                save_dir: PathOrStr = "./models") -> Tuple[List[float]]:
     """
     Main training function for the NCN model.  
     
@@ -198,6 +198,9 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
     criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
 
     best_valid_loss = float('inf')
+    training_losses = []
+    validation_losses = []
+
 
     # set up tensorboard and data logging
     date = datetime.now()
@@ -218,6 +221,8 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
         
         train_loss = train(model, train_iterator, optimizer, criterion, clip)
         valid_loss = evaluate(model, valid_iterator, criterion)
+        training_losses.append(train_loss)
+        validation_losses.append(valid_loss)
 
         end_time = time.time()
 
@@ -247,4 +252,6 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
             lr /= 10
             flag_second_cycle = False
             optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    return training_losses, validation_losses
 
