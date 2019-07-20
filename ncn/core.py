@@ -86,7 +86,7 @@ MAX_TITLE_LENGTH = 17
 MAX_CONTEXT_LENGTH = 25
 """Maximum encoder sequence length."""
 
-MAX_AUTHORS = 7
+MAX_AUTHORS = 5
 """Maximum number of authors considered"""
 
 SEED = 34
