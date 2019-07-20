@@ -69,11 +69,8 @@ class Evaluator:
             self.bm25 = BM25(self.corpus)
             
             # load mapping to give proper recommendations
-            with open("assets/title_tokenized_to_full.json", "rb") as fp:
-                self.title_to_full = json.load(fp)
-            # load mapping dictionaries for inference
-            with open("assets/context_to_cited_indices.pkl", "rb") as fp:
-                self.context_cited_indices = pickle.load(fp)
+            with open("assets/title_tokenized_to_full.pkl", "rb") as fp:
+                self.title_to_full = pickle.load(fp)
 
         
         with open("assets/title_to_aut_cited.pkl", "rb") as fp:
