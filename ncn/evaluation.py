@@ -138,7 +138,7 @@ class Evaluator:
         
         recall_list = []
         with torch.no_grad():
-            for count, example in enumerate(self.data.test):
+            for example in tqdm_notebook(self.data.test[:10000]):
                 # numericalize query
                 context = self.context.numericalize([example.context])
                 citing = self.context.numericalize([example.authors_citing])
@@ -157,16 +157,16 @@ class Evaluator:
                     citing = padded.to(DEVICE)
 
                 top_titles = self._get_bm_top(example.context)
+                logger.info(f"True title in top_titles: {example.title_cited in top_titles}.")
                 top_authors = [self.title_aut_cited[tuple(title)] for title in top_titles]
                 
                 # add all true cited titles (can be multiple per context)
                 indices = self.context_cited_indices[tuple(example.context)]
                 append_count = 0
-                for i in indices:
-                    if self.examples[i].title_cited not in top_titles: 
-                        top_titles.append(self.examples[i].title_cited)
-                        top_authors.append(self.examples[i].authors_cited)
-                        append_count += 1
+                for i in indices: 
+                    top_titles.append(self.examples[i].title_cited)
+                    top_authors.append(self.examples[i].authors_cited)
+                    append_count += 1
 
                 
 
@@ -201,23 +201,24 @@ class Evaluator:
 
                 scores = self.criterion(output, titles)
                 scores = scores.sum(dim=1)
-                logger.debug(f"Evaluation scores shape: {scores.shape}")
+                logger.info(f"Evaluation scores shape: {scores.shape}")
 
                 _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
-                logger.debug(f"Index: {index}")
-                logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
+                logger.info(f"Index: {index}")
+                logger.info(f"Lowest scores: {scores[index]}")
+                logger.info(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
 
                 # check how many of the concatenated (=true) titles have been returned
                 scored = 0
                 for i in range(append_count):
                     if len(top_titles) - (i + 1) in index: scored += 1
+                    
+                logger.info(f"Scored {scored} out of {append_count} titles at {x}.")
                 
                 recall_list.append(scored/append_count)
 
-                if count % 1000 == 0: logging.info(f"Processed {count} out of {len(self.data.test)} examples")
-
-            return sum(recall_list) / len(self.data.test)
+            return sum(recall_list) / len(self.data.test[:10000])
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
@@ -226,7 +227,6 @@ class Evaluator:
             query = self.context.tokenize(query)
         if isinstance(citing, str):
             citing = self.authors.tokenize(citing)
-
          
         with torch.no_grad():
             top_titles = self._get_bm_top(query)
