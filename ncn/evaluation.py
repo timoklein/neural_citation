@@ -115,10 +115,9 @@ class Evaluator:
         # Return top 2048 for evaluation purpose, cut to half for recommendations to prevent memory errors
         if self.eval:
             try:
-                # TODO: Reset this to 2048 and run on server
-                return [title for score, title in scores if score > 0][:48]
+                return [title for score, title in scores][:1028]
             except IndexError:
-                return [title for score, title in scores if score > 0]
+                return [title for score, title in scores]
         else:
             try:
                 return [title for score, title in scores if score > 0][:1028]
@@ -141,9 +140,8 @@ class Evaluator:
         if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         
         recall_list = []
-        counter = 0
         with torch.no_grad():
-            for example in tqdm_notebook(self.data.test, desc= "Calculating recall"):
+            for count, example in enumerate(self.data.test):
                 # numericalize query
                 context = self.context.numericalize([example.context])
                 citing = self.context.numericalize([example.authors_citing])
@@ -207,11 +205,8 @@ class Evaluator:
                 scores = self.criterion(output, titles)
                 scores = scores.sum(dim=1)
                 logger.debug(f"Evaluation scores shape: {scores.shape}")
-                try:
-                    _, index = scores.topk(x, largest=False, sorted=True, dim=0)
-                    counter += 1
-                except RuntimeError:
-                    continue
+
+                _, index = scores.topk(x, largest=False, sorted=True, dim=0)
 
                 logger.debug(f"Index: {index}")
                 logger.debug(f"Range of true titles: {len(top_titles) - 1} - {len(top_titles) - 1 - append_count}")
@@ -223,7 +218,9 @@ class Evaluator:
                 
                 recall_list.append(scored/append_count)
 
-            return sum(recall_list) / counter
+                if count % 1000 == 0: logging.info(f"Processed {count} out of {len(self.data.test)} examples")
+
+            return sum(recall_list) / len(self.data.test)
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)

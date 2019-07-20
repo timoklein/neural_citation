@@ -106,7 +106,7 @@ class TDNNEncoder(nn.Module):
 
 
         # output shape: batch_size, list_length, num_filters
-        x = torch.cat(x, dim=1).squeeze()
+        x = torch.cat(x, dim=1).squeeze(3)
 
         batch_size = x.shape[0]
 
