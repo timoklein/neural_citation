@@ -13,7 +13,7 @@ from torchtext.data import TabularDataset
 from tqdm import tqdm_notebook
 
 import ncn.core
-from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE
+from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE, Filters
 from ncn.model import NeuralCitationNetwork
 
 logger = logging.getLogger("neural_citation.evaluation")
@@ -34,18 +34,28 @@ class Evaluator:
         If True, only the test samples will be used (model evaluation mode).
         If False, the corpus is built from the complete dataset (inference mode).   
     """
-    def __init__(self, path_to_weights: PathOrStr, data: BaseData, 
+    def __init__(self, context_filters: Filters, author_filters: Filters,
+                 num_filters: int, embed_size:int,
+                 path_to_weights: PathOrStr, data: BaseData, 
                  evaluate: bool = True, show_attention: bool = False):
         self.data = data
         self.context, self.title, self.authors = self.data.cntxt, self.data.ttl, self.data.aut
         self.pad = self.title.vocab.stoi['<pad>']
         self.criterion = nn.CrossEntropyLoss(ignore_index = self.pad, reduction="none")
 
-        # instantiating model like this is bad, pass as params?
-        self.model = NeuralCitationNetwork(context_filters=[4,4,5], context_vocab_size=len(self.context.vocab),
-                                authors=True, author_filters=[1,2], author_vocab_size=len(self.authors.vocab),
-                                title_vocab_size=len(self.title.vocab), pad_idx=self.pad, 
-                                num_layers=2, show_attention=show_attention)
+        self.model = NeuralCitationNetwork(context_filters=context_filters,
+                                            author_filters=author_filters,
+                                            context_vocab_size=len(self.context.vocab),
+                                            title_vocab_size=len(self.title.vocab),
+                                            author_vocab_size=len(self.authors.vocab),
+                                            pad_idx=self.pad,
+                                            num_filters=num_filters,
+                                            authors=True, 
+                                            embed_size=embed_size,
+                                            num_layers=2,
+                                            hidden_size=num_filters,
+                                            dropout_p=0.2,
+                                            show_attention=False)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
