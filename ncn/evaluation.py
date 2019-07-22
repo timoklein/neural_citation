@@ -122,7 +122,7 @@ class Evaluator:
         # Return top 2048 for evaluation purpose, cut to half for recommendations to prevent memory errors
         if self.eval:
             try:
-                return [title for score, title in scores][:1028]
+                return [title for score, title in scores][:256]
             except IndexError:
                 return [title for score, title in scores]
         else:
@@ -148,7 +148,7 @@ class Evaluator:
         
         recall_list = []
         with torch.no_grad():
-            for example in tqdm_notebook(self.data.test[:10000]):
+            for example in tqdm_notebook(self.data.test[:20000]):
                 # numericalize query
                 context = self.context.numericalize([example.context])
                 citing = self.context.numericalize([example.authors_citing])
@@ -228,7 +228,7 @@ class Evaluator:
                 
                 recall_list.append(scored/append_count)
 
-            return sum(recall_list) / len(self.data.test[:10000])
+            return sum(recall_list) / len(self.data.test[:20000])
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)

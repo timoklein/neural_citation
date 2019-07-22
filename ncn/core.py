@@ -80,10 +80,10 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
 """Set of stopwords obtained via spacy."""
 
-MAX_TITLE_LENGTH = 15
+MAX_TITLE_LENGTH = 18
 """Maximum decoder sequence length. Also determines the number of attention weights."""
 
-MAX_CONTEXT_LENGTH = 21
+MAX_CONTEXT_LENGTH = 50
 """Maximum encoder sequence length."""
 
 MAX_AUTHORS = 5
