@@ -55,7 +55,7 @@ class Evaluator:
                                             num_layers=2,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
-                                            show_attention=False)
+                                            show_attention=True)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()

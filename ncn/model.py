@@ -1,10 +1,11 @@
 import logging
 import random
-from typing import List
+from typing import List, Tuple
 
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch import Tensor
 
 import ncn.core
 from ncn.core import Filters, DEVICE
@@ -28,13 +29,13 @@ class TDNN(nn.Module):
 
     def __init__(self, filter_size: int, 
                        embed_size: int, 
-                       num_filters: int = 64):
+                       num_filters: int):
         super().__init__()
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         # no bias to avoid accumulating biases on padding
         self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=False)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """
         ## Input:  
 
@@ -89,7 +90,7 @@ class TDNNEncoder(nn.Module):
         self.fc = nn.Linear(self._num_filters_total, self._num_filters_total)
 
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """
         ## Input:  
 
@@ -163,7 +164,8 @@ class NCNEncoder(nn.Module):
             self.citing_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size)
             self.cited_author_encoder = TDNNEncoder(author_filters, num_filters, embed_size)
 
-    def forward(self, context, authors_citing=None, authors_cited=None):
+    def forward(self, context: Tensor, 
+                authors_citing: Tensor = None, authors_cited: Tensor = None) -> Tensor:
         """
         ## Input:  
         
@@ -223,7 +225,7 @@ class Attention(nn.Module):
         self.attn = nn.Linear(enc_num_filters + dec_hid_dim, dec_hid_dim)
         self.v = nn.Parameter(torch.rand(dec_hid_dim))
     
-    def forward(self, hidden, encoder_outputs):
+    def forward(self, hidden: Tensor, encoder_outputs: Tensor) -> Tensor:
         """
         ## Input:  
         
@@ -295,7 +297,7 @@ class Decoder(nn.Module):
         """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
         return torch.zeros(bs, self.hidden_size, device=DEVICE)
     
-    def forward(self, title, hidden, encoder_outputs):
+    def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
         """
         ## Input:  
         
@@ -454,9 +456,10 @@ class NeuralCitationNetwork(nn.Module):
     def count_parameters(self):
         """Calculates the number of trainable parameters.""" 
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-    # TODO: Document attention shapes properly
-    def forward(self, context, title, authors_citing=None, authors_cited=None,
-               teacher_forcing_ratio: float = 1):
+
+    def forward(self, context: Tensor, title: Tensor, 
+                authors_citing: Tensor = None, authors_cited: Tensor = None,
+                teacher_forcing_ratio: float = 1):
         """
         ## Parameters:  
 
@@ -477,7 +480,7 @@ class NeuralCitationNetwork(nn.Module):
         
         ## Output:  
         
-        - **output** *(batch_size, title_vocab_len)*: 
+        - **output** *(batch_size, seq_len, title_vocab_len)*: 
             Tensor containing the predictions of the decoder.
          **attentions** *(batch_size, title_vocab_len)*: 
             Tensor containing the decoder attention states.
