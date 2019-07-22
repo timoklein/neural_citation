@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.6.2" />
+<title>ncn.training API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>ncn.training</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">import math
+import time
+import random
+import logging
+from pathlib import Path
+from datetime import datetime
+from tqdm import tqdm_notebook, tnrange
+from typing import List, Tuple
+
+import torch
+from torch import nn
+from torch import optim
+import torch.nn.functional as F
+import torch.nn.init as init
+from torch.utils.tensorboard import SummaryWriter
+from torchtext.data import BucketIterator
+
+import ncn.core
+from ncn.core import DEVICE, SEED, PathOrStr
+from ncn.data import get_bucketized_iterators
+from ncn.model import NeuralCitationNetwork
+
+logger = logging.getLogger(&#34;neural_citation.train&#34;)
+
+
+def init_weights(m):
+    &#34;&#34;&#34;
+    Initializes the model layers. The following initialization schemes are used:  
+
+    - **conv layers**: use the he-uniform initialization scheme proposed in https://arxiv.org/abs/1502.01852.  
+    - **linear layers**: Uses Glorot-Uniform initialization according to http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf.  
+    - **GRU layers**: Initialize the weight matrices as orthogonal matrices according to https://arxiv.org/abs/1312.6120.  
+    - **batchnorm layers**: Use the ResNet reference implementation strategy, i.e. weights = 1 and biases = 0.    
+    
+    ## Parameters:  
+    
+    - **m** *(nn.Module)*: Layer of the network.   
+    &#34;&#34;&#34;
+    if isinstance(m, nn.Conv2d):
+        init.kaiming_uniform_(m.weight, a=0, nonlinearity=&#34;relu&#34;)
+    elif isinstance(m, nn.GRU):
+        for param in m.parameters():
+            if len(param.shape) &gt;= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Linear):
+        init.xavier_uniform_(m.weight)
+
+
+def epoch_time(start_time: float, end_time: float) -&gt; Tuple[int, int]:
+    &#34;&#34;&#34;
+    Measures the time elapsed between two time stamps.  
+    
+    ## Parameters:  
+    
+    - **start_time** *(float)*: Starting time stamp.  
+    - **end_time** *(float)*: Ending time stamp.  
+    &#34;&#34;&#34;
+    elapsed_time = end_time - start_time
+    elapsed_mins = int(elapsed_time / 60)
+    elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
+    return elapsed_mins, elapsed_secs
+
+
+
+def train(model: nn.Module, iterator: BucketIterator, 
+          optimizer: optim, criterion: nn.Module, clip: float) -&gt; float:
+    &#34;&#34;&#34;
+    Trains the NCN model for a single epoch.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the training data.  
+    - **optimizer** *(optim)*: Torch gradient descent optimizer used to train the model.  
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.  
+    - **clip** *(int)*: Apply gradient clipping at the given value.  
+
+    
+    ## Output:  
+    
+    - **loss** *(float)*: Epoch loss.   
+    &#34;&#34;&#34;
+    
+    model.train()
+    
+    epoch_loss = 0
+    
+    for i, batch in enumerate(tqdm_notebook(iterator, desc=&#34;Training batches&#34;)):
+        
+        # unpack and move to GPU if available
+        cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+        cntxt = cntxt.to(DEVICE)
+        citing = citing.to(DEVICE)
+        ttl = ttl.to(DEVICE)
+        cited = cited.to(DEVICE)
+        
+        optimizer.zero_grad()
+        
+        output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
+        
+        #ttl = [trg sent len, batch size]
+        #output = [trg sent len, batch size, output dim]
+        
+        output = output[1:].view(-1, output.shape[-1])
+        ttl = ttl[1:].view(-1)
+        
+        #ttl = [(trg sent len - 1) * batch size]
+        #output = [(trg sent len - 1) * batch size, output dim]
+        
+        loss = criterion(output, ttl)
+        
+        loss.backward()
+        
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+        
+        optimizer.step()
+        
+        epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)
+
+
+
+def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
+    &#34;&#34;&#34;
+    Puts the model in eval mode and evaluates on a single epoch without computing gradients.
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the evaluation data.   
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.    
+
+    ## Output:  
+    
+    - **loss** *(float)*: Validation loss for the epoch.   
+    &#34;&#34;&#34;
+    
+    model.eval()
+    
+    epoch_loss = 0
+    
+    with torch.no_grad():
+    
+        for i, batch in enumerate(tqdm_notebook(iterator, desc=&#34;Evaluating batches&#34;)):
+
+            # unpack and move to GPU if available
+            cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+            cntxt = cntxt.to(DEVICE)
+            citing = citing.to(DEVICE)
+            ttl = ttl.to(DEVICE)
+            cited = cited.to(DEVICE)
+            
+            output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
+
+            output = output[1:].view(-1, output.shape[-1])
+            ttl = ttl[1:].view(-1)
+
+
+            loss = criterion(output, ttl)
+
+            epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)
+
+
+def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
+                n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
+                save_dir: PathOrStr = &#34;./models&#34;) -&gt; Tuple[List[float]]:
+    &#34;&#34;&#34;
+    Main training function for the NCN model.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **train_iterator** *(BucketIterator)*: Bucketized iterator used for training the model.   
+    - **valid_iterator** *(BucketIterator)*: Bucketized iterator used for evaluating the model.  
+    - **pad** *(int)*: Vocabulary padding index. This index is ignored when calculating the loss.      
+    - **n_epochs** *(int=10)*: Number of training epochs.  
+    - **clip** *(int=5)*: Apply gradient clipping at the given value.  
+    - **lr** *(float=0.001)*: Learning rate for the optimizer. This function uses Adam to train the model.    
+    - **save_dir** *(PathOrstr=&#39;./models&#39;)*: Save the model with the lowest validation loss at this path.  
+    &#34;&#34;&#34;
+    save_dir = Path(save_dir)
+
+    flag_first_cycle = False
+    flag_second_cycle = False
+
+    
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction=&#34;sum&#34;)
+
+    best_valid_loss = float(&#39;inf&#39;)
+    training_losses = []
+    validation_losses = []
+
+
+    # set up tensorboard and data logging
+    date = datetime.now()
+    log_dir = Path(f&#34;runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}&#34;)
+    writer = SummaryWriter(log_dir=log_dir)
+
+    training_settings = (
+        &#34;\nTRAINING SETTINGS&#34;
+        f&#34;\nSeed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}&#34;
+    )
+    settings = (model.settings + training_settings)
+
+    logger.info(settings)
+
+    for epoch in tnrange(n_epochs, desc= &#34;Epochs&#34;):
+        
+        start_time = time.time()
+        
+        train_loss = train(model, train_iterator, optimizer, criterion, clip)
+        valid_loss = evaluate(model, valid_iterator, criterion)
+        training_losses.append(train_loss)
+        validation_losses.append(valid_loss)
+
+        end_time = time.time()
+
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)
+
+        writer.add_scalar(&#39;loss/training&#39;, train_loss, epoch)
+        writer.add_scalar(&#39;loss/validation&#39;, valid_loss, epoch)
+        
+        if valid_loss &lt; best_valid_loss:
+            best_valid_loss = valid_loss
+            if not save_dir.exists(): save_dir.mkdir()
+            torch.save(model.state_dict(), save_dir/f&#34;NCN_{date.month}_{date.day}_{date.hour}.pt&#34;)
+            with open(save_dir/f&#34;NCN_{date.month}_{date.day}_{date.hour}_settings.txt&#34;, &#34;w&#34;) as file:
+                file.write(settings + f&#34;, Valid loss = {valid_loss}&#34;)
+        
+        logger.info(f&#34;Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s&#34;)
+        logger.info(f&#34;\tTrain Loss: {train_loss:.3f}&#34;)
+        logger.info(f&#34;\t Val. Loss: {valid_loss:.3f}&#34;)
+
+        if valid_loss &lt; 1100 and flag_first_cycle: 
+            logger.info(f&#34;Decreasing learning rate from {lr} to {lr/10}.&#34;)
+            lr /= 10
+            flag_first_cycle = False
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+        elif valid_loss &lt; 1050 and flag_second_cycle:
+            logger.info(f&#34;Changing learning rate from {lr} to {lr/10}.&#34;)
+            lr /= 10
+            flag_second_cycle = False
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    return training_losses, validation_losses</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="ncn.training.epoch_time"><code class="name flex">
+<span>def <span class="ident">epoch_time</span></span>(<span>start_time: float, end_time: float) -> Tuple[int, int]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Measures the time elapsed between two time stamps.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>start_time</strong> <em>(float)</em>: Starting time stamp.
+</li>
+<li><strong>end_time</strong> <em>(float)</em>: Ending time stamp.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def epoch_time(start_time: float, end_time: float) -&gt; Tuple[int, int]:
+    &#34;&#34;&#34;
+    Measures the time elapsed between two time stamps.  
+    
+    ## Parameters:  
+    
+    - **start_time** *(float)*: Starting time stamp.  
+    - **end_time** *(float)*: Ending time stamp.  
+    &#34;&#34;&#34;
+    elapsed_time = end_time - start_time
+    elapsed_mins = int(elapsed_time / 60)
+    elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
+    return elapsed_mins, elapsed_secs</code></pre>
+</details>
+</dd>
+<dt id="ncn.training.evaluate"><code class="name flex">
+<span>def <span class="ident">evaluate</span></span>(<span>model: torch.nn.modules.module.Module, iterator: torchtext.data.iterator.BucketIterator, criterion: torch.nn.modules.module.Module)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Puts the model in eval mode and evaluates on a single epoch without computing gradients.</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>model</strong> <em>(nn.Module)</em>: The model optimized by this function.
+</li>
+<li><strong>iterator</strong> <em>(BucketIterator)</em>: Bucketized iterator containing the evaluation data.
+</li>
+<li><strong>criterion</strong> <em>(nn.Module.loss)</em>: Loss function for training the model.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>loss</strong> <em>(float)</em>: Validation loss for the epoch.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
+    &#34;&#34;&#34;
+    Puts the model in eval mode and evaluates on a single epoch without computing gradients.
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the evaluation data.   
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.    
+
+    ## Output:  
+    
+    - **loss** *(float)*: Validation loss for the epoch.   
+    &#34;&#34;&#34;
+    
+    model.eval()
+    
+    epoch_loss = 0
+    
+    with torch.no_grad():
+    
+        for i, batch in enumerate(tqdm_notebook(iterator, desc=&#34;Evaluating batches&#34;)):
+
+            # unpack and move to GPU if available
+            cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+            cntxt = cntxt.to(DEVICE)
+            citing = citing.to(DEVICE)
+            ttl = ttl.to(DEVICE)
+            cited = cited.to(DEVICE)
+            
+            output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
+
+            output = output[1:].view(-1, output.shape[-1])
+            ttl = ttl[1:].view(-1)
+
+
+            loss = criterion(output, ttl)
+
+            epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)</code></pre>
+</details>
+</dd>
+<dt id="ncn.training.init_weights"><code class="name flex">
+<span>def <span class="ident">init_weights</span></span>(<span>m)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Initializes the model layers. The following initialization schemes are used:
+</p>
+<ul>
+<li><strong>conv layers</strong>: use the he-uniform initialization scheme proposed in <a href="https://arxiv.org/abs/1502.01852.">https://arxiv.org/abs/1502.01852.</a>
+</li>
+<li><strong>linear layers</strong>: Uses Glorot-Uniform initialization according to <a href="http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf.">http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf.</a>
+</li>
+<li><strong>GRU layers</strong>: Initialize the weight matrices as orthogonal matrices according to <a href="https://arxiv.org/abs/1312.6120.">https://arxiv.org/abs/1312.6120.</a>
+</li>
+<li><strong>batchnorm layers</strong>: Use the ResNet reference implementation strategy, i.e. weights = 1 and biases = 0.
+</li>
+</ul>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>m</strong> <em>(nn.Module)</em>: Layer of the network.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def init_weights(m):
+    &#34;&#34;&#34;
+    Initializes the model layers. The following initialization schemes are used:  
+
+    - **conv layers**: use the he-uniform initialization scheme proposed in https://arxiv.org/abs/1502.01852.  
+    - **linear layers**: Uses Glorot-Uniform initialization according to http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf.  
+    - **GRU layers**: Initialize the weight matrices as orthogonal matrices according to https://arxiv.org/abs/1312.6120.  
+    - **batchnorm layers**: Use the ResNet reference implementation strategy, i.e. weights = 1 and biases = 0.    
+    
+    ## Parameters:  
+    
+    - **m** *(nn.Module)*: Layer of the network.   
+    &#34;&#34;&#34;
+    if isinstance(m, nn.Conv2d):
+        init.kaiming_uniform_(m.weight, a=0, nonlinearity=&#34;relu&#34;)
+    elif isinstance(m, nn.GRU):
+        for param in m.parameters():
+            if len(param.shape) &gt;= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Linear):
+        init.xavier_uniform_(m.weight)</code></pre>
+</details>
+</dd>
+<dt id="ncn.training.train"><code class="name flex">
+<span>def <span class="ident">train</span></span>(<span>model: torch.nn.modules.module.Module, iterator: torchtext.data.iterator.BucketIterator, optimizer: <module 'torch.optim' from '/home/timo/Programs/miniconda3/envs/fastai/lib/python3.7/site-packages/torch/optim/__init__.py'>, criterion: torch.nn.modules.module.Module, clip: float) -> float</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Trains the NCN model for a single epoch.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>model</strong> <em>(nn.Module)</em>: The model optimized by this function.
+</li>
+<li><strong>iterator</strong> <em>(BucketIterator)</em>: Bucketized iterator containing the training data.
+</li>
+<li><strong>optimizer</strong> <em>(optim)</em>: Torch gradient descent optimizer used to train the model.
+</li>
+<li><strong>criterion</strong> <em>(nn.Module.loss)</em>: Loss function for training the model.
+</li>
+<li><strong>clip</strong> <em>(int)</em>: Apply gradient clipping at the given value.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>loss</strong> <em>(float)</em>: Epoch loss.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def train(model: nn.Module, iterator: BucketIterator, 
+          optimizer: optim, criterion: nn.Module, clip: float) -&gt; float:
+    &#34;&#34;&#34;
+    Trains the NCN model for a single epoch.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **iterator** *(BucketIterator)*: Bucketized iterator containing the training data.  
+    - **optimizer** *(optim)*: Torch gradient descent optimizer used to train the model.  
+    - **criterion** *(nn.Module.loss)*: Loss function for training the model.  
+    - **clip** *(int)*: Apply gradient clipping at the given value.  
+
+    
+    ## Output:  
+    
+    - **loss** *(float)*: Epoch loss.   
+    &#34;&#34;&#34;
+    
+    model.train()
+    
+    epoch_loss = 0
+    
+    for i, batch in enumerate(tqdm_notebook(iterator, desc=&#34;Training batches&#34;)):
+        
+        # unpack and move to GPU if available
+        cntxt, citing, ttl, cited = batch.context, batch.authors_citing, batch.title_cited, batch.authors_cited
+        cntxt = cntxt.to(DEVICE)
+        citing = citing.to(DEVICE)
+        ttl = ttl.to(DEVICE)
+        cited = cited.to(DEVICE)
+        
+        optimizer.zero_grad()
+        
+        output = model(context = cntxt, title = ttl, authors_citing = citing, authors_cited = cited)
+        
+        #ttl = [trg sent len, batch size]
+        #output = [trg sent len, batch size, output dim]
+        
+        output = output[1:].view(-1, output.shape[-1])
+        ttl = ttl[1:].view(-1)
+        
+        #ttl = [(trg sent len - 1) * batch size]
+        #output = [(trg sent len - 1) * batch size, output dim]
+        
+        loss = criterion(output, ttl)
+        
+        loss.backward()
+        
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+        
+        optimizer.step()
+        
+        epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)</code></pre>
+</details>
+</dd>
+<dt id="ncn.training.train_model"><code class="name flex">
+<span>def <span class="ident">train_model</span></span>(<span>model: torch.nn.modules.module.Module, train_iterator: torchtext.data.iterator.BucketIterator, valid_iterator: torchtext.data.iterator.BucketIterator, pad: int, n_epochs: int = 20, clip: float = 5.0, lr: float = 0.001, save_dir: Union[pathlib.Path, str] = './models') -> Tuple[List[float]]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Main training function for the NCN model.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>model</strong> <em>(nn.Module)</em>: The model optimized by this function.
+</li>
+<li><strong>train_iterator</strong> <em>(BucketIterator)</em>: Bucketized iterator used for training the model.
+</li>
+<li><strong>valid_iterator</strong> <em>(BucketIterator)</em>: Bucketized iterator used for evaluating the model.
+</li>
+<li><strong>pad</strong> <em>(int)</em>: Vocabulary padding index. This index is ignored when calculating the loss.
+</li>
+<li><strong>n_epochs</strong> <em>(int=10)</em>: Number of training epochs.
+</li>
+<li><strong>clip</strong> <em>(int=5)</em>: Apply gradient clipping at the given value.
+</li>
+<li><strong>lr</strong> <em>(float=0.001)</em>: Learning rate for the optimizer. This function uses Adam to train the model.
+</li>
+<li><strong>save_dir</strong> <em>(PathOrstr='./models')</em>: Save the model with the lowest validation loss at this path.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
+                n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
+                save_dir: PathOrStr = &#34;./models&#34;) -&gt; Tuple[List[float]]:
+    &#34;&#34;&#34;
+    Main training function for the NCN model.  
+    
+    ## Parameters:  
+    
+    - **model** *(nn.Module)*: The model optimized by this function.  
+    - **train_iterator** *(BucketIterator)*: Bucketized iterator used for training the model.   
+    - **valid_iterator** *(BucketIterator)*: Bucketized iterator used for evaluating the model.  
+    - **pad** *(int)*: Vocabulary padding index. This index is ignored when calculating the loss.      
+    - **n_epochs** *(int=10)*: Number of training epochs.  
+    - **clip** *(int=5)*: Apply gradient clipping at the given value.  
+    - **lr** *(float=0.001)*: Learning rate for the optimizer. This function uses Adam to train the model.    
+    - **save_dir** *(PathOrstr=&#39;./models&#39;)*: Save the model with the lowest validation loss at this path.  
+    &#34;&#34;&#34;
+    save_dir = Path(save_dir)
+
+    flag_first_cycle = False
+    flag_second_cycle = False
+
+    
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction=&#34;sum&#34;)
+
+    best_valid_loss = float(&#39;inf&#39;)
+    training_losses = []
+    validation_losses = []
+
+
+    # set up tensorboard and data logging
+    date = datetime.now()
+    log_dir = Path(f&#34;runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}&#34;)
+    writer = SummaryWriter(log_dir=log_dir)
+
+    training_settings = (
+        &#34;\nTRAINING SETTINGS&#34;
+        f&#34;\nSeed = {SEED}, # Epochs = {n_epochs}, Batch size = {train_iterator.batch_size}, Initial lr = {lr}&#34;
+    )
+    settings = (model.settings + training_settings)
+
+    logger.info(settings)
+
+    for epoch in tnrange(n_epochs, desc= &#34;Epochs&#34;):
+        
+        start_time = time.time()
+        
+        train_loss = train(model, train_iterator, optimizer, criterion, clip)
+        valid_loss = evaluate(model, valid_iterator, criterion)
+        training_losses.append(train_loss)
+        validation_losses.append(valid_loss)
+
+        end_time = time.time()
+
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)
+
+        writer.add_scalar(&#39;loss/training&#39;, train_loss, epoch)
+        writer.add_scalar(&#39;loss/validation&#39;, valid_loss, epoch)
+        
+        if valid_loss &lt; best_valid_loss:
+            best_valid_loss = valid_loss
+            if not save_dir.exists(): save_dir.mkdir()
+            torch.save(model.state_dict(), save_dir/f&#34;NCN_{date.month}_{date.day}_{date.hour}.pt&#34;)
+            with open(save_dir/f&#34;NCN_{date.month}_{date.day}_{date.hour}_settings.txt&#34;, &#34;w&#34;) as file:
+                file.write(settings + f&#34;, Valid loss = {valid_loss}&#34;)
+        
+        logger.info(f&#34;Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s&#34;)
+        logger.info(f&#34;\tTrain Loss: {train_loss:.3f}&#34;)
+        logger.info(f&#34;\t Val. Loss: {valid_loss:.3f}&#34;)
+
+        if valid_loss &lt; 1100 and flag_first_cycle: 
+            logger.info(f&#34;Decreasing learning rate from {lr} to {lr/10}.&#34;)
+            lr /= 10
+            flag_first_cycle = False
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+        elif valid_loss &lt; 1050 and flag_second_cycle:
+            logger.info(f&#34;Changing learning rate from {lr} to {lr/10}.&#34;)
+            lr /= 10
+            flag_second_cycle = False
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    return training_losses, validation_losses</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="ncn" href="index.html">ncn</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="ncn.training.epoch_time" href="#ncn.training.epoch_time">epoch_time</a></code></li>
+<li><code><a title="ncn.training.evaluate" href="#ncn.training.evaluate">evaluate</a></code></li>
+<li><code><a title="ncn.training.init_weights" href="#ncn.training.init_weights">init_weights</a></code></li>
+<li><code><a title="ncn.training.train" href="#ncn.training.train">train</a></code></li>
+<li><code><a title="ncn.training.train_model" href="#ncn.training.train_model">train_model</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.6.2" />
+<title>ncn.data API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>ncn.data</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">import re
+import pandas as pd
+import logging
+import json
+import string
+import spacy
+import random
+from tqdm import tqdm
+from pathlib import Path
+from typing import Union, Collection, List, Dict, Tuple
+from collections import Counter
+from functools import partial
+from pandas import DataFrame
+from spacy.tokenizer import Tokenizer
+from spacy.lang.en import English
+from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
+
+import ncn.core
+from ncn.core import PathOrStr, IteratorData, BaseData
+from ncn.core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, SEED
+
+
+
+logger = logging.getLogger(&#34;neural_citation.data&#34;)
+
+
+def process_text(text: str, delimiter: str = &#34;\n============\n&#34;) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Preprocessing function for preprocessing arxiv CS paper text.  
+
+    ## Parameters:   
+
+    - **text** *(str)*: .txt file string object containing the text of a paper.  
+    - **delimiter** *(str = &#34;\\n============\\n&#34;)*: token separating text sentences.  
+
+    ## Output:  
+
+    - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
+    &#34;&#34;&#34;
+    text = re.sub(&#34;&lt;formula&gt;&#34;, &#39;&#39;, text)
+    sentences = text.split(delimiter)
+    contexts = []
+    for sentence in sentences:
+        if re.search(CITATION_PATTERNS, sentence):
+            contexts.append(sentence)
+    return contexts
+
+
+def process_refs(refs: str, delimiter_patterns: str = &#34;GC|DBLP&#34;) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Preprocessing function for preprocessing arxiv CS paper references.   
+
+    ## Parameters:   
+
+    - **refs** *(str)*: reference file string.  
+    - **delimiter_patterns** *(str = &#34;GC|DBLP&#34;)*: regex patterns used to split the inidividual references.  
+
+    ## Output:  
+
+    - List of citation contexts split at *delimiter*.
+    &#34;&#34;&#34;
+    refs = re.sub(&#34;\n&#34;, &#39;&#39;, refs)
+    return re.split(delimiter_patterns, refs)
+
+
+
+def generate_context_samples(contexts: Collection[str], refs: Collection[str], 
+                       meta: Dict[str, str], textpath: Path) -&gt; DataFrame:
+    &#34;&#34;&#34;
+    Generates citation context samples for a single paper. 
+    The contexts, references and metadata are expected to be passed in tokenized form.   
+    
+    ## Parameters:  
+    
+    - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
+    - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
+    - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    
+    ## Output:  
+    
+    - **samples** *(pandas.DataFrame)*:  All fully extractable context samples.
+        Each sample has to have information for citation context, citing authors, cited authors and cited title.  
+    &#34;&#34;&#34;
+    samples = []
+    for sentence in contexts:
+        # return a list of all citations in a sentence
+        hits = re.findall(CITATION_PATTERNS, sentence)
+        for hit in hits:
+            # remove the identifiers as we use them to split .refs file
+            s = re.sub(&#34;GC|DBLP&#34;, &#39;&#39;, hit)
+            for ref in refs:
+                try:
+                    if re.search(s[1:-1], ref):
+                        # find and preprocess authors
+                        authors = re.findall(&#34;;(.*?)\`\`&#34;, ref)
+                        authors = &#39;&#39;.join(authors)
+                        authors = re.sub(r&#34;\band\b&#34;, &#39;,&#39;, authors)
+                        authors = re.sub(r&#34;-&#34;, &#39;&#39;, authors)
+                        authors = authors.strip(&#39;,  &#39;)
+
+                        # skip the sample if there is no author information
+                        if len(authors) == 0:
+                            continue
+                        
+                        # find and preprocess titles
+                        title = re.findall(&#39;\`\`(.*?)\&#39;\&#39;&#39;, ref)
+                        title = &#39;&#39;.join(title).strip(&#39;,&#39;)
+                        
+                        # generate sample in correct format
+                        sample = {&#34;context&#34;: re.sub(CITATION_PATTERNS, &#39;&#39;, sentence),
+                                  &#34;authors_citing&#34;: &#39;,&#39;.join(meta[&#34;authors&#34;]),
+                                  &#34;title_cited&#34;: title,
+                                  &#34;authors_cited&#34;: authors}
+                        samples.append(pd.DataFrame(sample, index=[0]))
+                except:
+                    logger.info(&#39;!&#39;*30)
+                    logger.info(f&#34;Found erroneous ref at {textpath.stem}.&#34;)
+                    logger.info(ref)
+    return samples
+
+
+def clean_incomplete_data(path: PathOrStr) -&gt; None:
+    &#34;&#34;&#34;
+    Cleaning function for the arxiv CS dataset. Checks all .txt files in the target folder and looks
+    for matching .ref and .meta files. If a file is missing, all others are deleted.  
+    If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.  
+
+    ## Parameters:   
+
+    - **path** *(PathOrStr)*: Path object or string to the dataset.      
+    &#34;&#34;&#34;
+    path = Path(path)
+
+    incomplete_paths = 0
+    empty_files = 0
+    no_files = len(list(path.glob(&#34;*.txt&#34;)))
+
+    for textpath in path.glob(&#34;*.txt&#34;):
+        metapath = textpath.with_suffix(&#34;.meta&#34;)
+        refpath = textpath.with_suffix(&#34;.refs&#34;)
+
+        if ( not metapath.exists() ) or ( not refpath.exists() ):
+            incomplete_paths += 1
+            logger.info(f&#34;Found incomplete file: {textpath.stem}&#34;)
+            textpath.unlink()
+            try:
+                metapath.unlink()
+            except FileNotFoundError:
+                pass
+            try:
+                refpath.unlink()
+            except FileNotFoundError:
+                pass
+        else:
+            with open(textpath, &#39;r&#39;) as f:
+                text = f.read()
+            with open(metapath, &#39;r&#39;) as f:
+                meta = f.read()
+            with open(refpath, &#39;r&#39;) as f:
+                refs = f.read()
+
+            if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
+                empty_files += 1
+                logger.info(f&#34;Found empty file: {textpath.stem}&#34;)
+                textpath.unlink()
+                metapath.unlink()
+                refpath.unlink()
+    
+    message = (f&#34;Incomplete paths(not all files present): {incomplete_paths} out of {no_files}&#34;
+                f&#34;\nAt least one empty file: {empty_files} out of {no_files}&#34;)
+    logger.info(message)
+
+
+def prepare_data(path: PathOrStr) -&gt; None:
+    &#34;&#34;&#34; 
+    Extracts citation contexts from each (.txt, .meta, .refs) tupel in the given location 
+    and stores them in a DataFrame.  
+    Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
+    The resulting DataFrame is saved as Python pickle object in the parent directory.  
+
+    ## Parameters:   
+
+    - **path** *(PathOrStr)*: Path object or string to the dataset.
+    &#34;&#34;&#34;
+    path = Path(path)
+    save_dir = path.parent
+    if not save_dir.exists(): save_dir.mkdir()
+    
+    data = []
+
+    no_total = len(list(path.glob(&#34;*.txt&#34;)))
+    logger.info(&#39;-&#39;*30)
+    logger.info(f&#34;Total number of files to process: {no_total}&#34;)
+    logger.info(&#39;-&#39;*30)
+
+    for textpath in tqdm(path.glob(&#34;*.txt&#34;)):
+        
+        metapath = textpath.with_suffix(&#34;.meta&#34;)
+        refpath = textpath.with_suffix(&#34;.refs&#34;)
+
+        with open(textpath, &#39;r&#39;) as f:
+            text = f.read()
+        with open(metapath, &#39;r&#39;) as f:
+            meta = f.read()
+        with open(refpath, &#39;r&#39;) as f:
+            refs = f.read()
+        
+        # preprocess string data
+        meta = json.loads(meta)
+        text = process_text(text)
+        refs = process_refs(refs)
+        data.extend(generate_context_samples(text, refs, meta, textpath))
+
+
+    dataset = pd.concat(data, axis=0)
+
+    # prune empty fields
+    dataset = dataset[(dataset[&#34;context&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;authors_citing&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;title_cited&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;authors_cited&#34;] != &#34;&#34;)]
+
+    dataset.reset_index(inplace=True)
+    dataset.drop(&#34;index&#34;, axis=1, inplace=True)
+    save_path = save_dir/f&#34;arxiv_data.csv&#34;
+    dataset.to_csv(save_path, compression=None, index=False, index_label=False)
+    logger.info(f&#34;Dataset with {len(dataset)} samples has been saved to: {save_path}.&#34;)
+
+
+def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Applies the following preprocessing steps on a string:  
+ 
+    1. Replace digits
+    2. Remove all punctuation.  
+    3. Tokenize.  
+    4. Remove numbers.  
+    5. Lemmatize.   
+    6. Remove blanks  
+    7. Prune length to max length (different for contexts and titles)  
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed tokens.
+    &#34;&#34;&#34;
+    text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
+    text = re.sub(&#34;[&#34; + re.escape(string.punctuation) + &#34;]&#34;, &#34; &#34;, text)
+    text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
+    text = [token for token in text if token.strip()]
+
+    # return the sequence up to max length or totally if shorter
+    # max length depends on the type of processed text
+    if identifier == &#34;context&#34;:
+        try:
+            return text[:MAX_CONTEXT_LENGTH]
+        except IndexError:
+            return text
+    elif identifier == &#34;title_cited&#34;:
+        try:
+            return text[:MAX_TITLE_LENGTH]
+        except IndexError:
+            return text
+    else:
+        raise NameError(&#34;Identifier name could not be found.&#34;)
+
+
+def author_preprocessing(text: str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Applies the following preprocessing steps on a string:  
+
+    
+    1. Remove all numbers.   
+    2. Tokenize.  
+    3. Remove blanks.  
+    4. Prune length to max length. 
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed author tokens. 
+    &#34;&#34;&#34;
+    text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
+    text = text.split(&#39;,&#39;)
+    text = [token.strip() for token in text if token.strip()]
+
+    # return the sequence up to max length or totally if shorter
+    try:
+        return text[:MAX_AUTHORS]
+    except IndexError:
+        return text
+
+
+def get_fields() -&gt; Tuple[Field, Field, Field]:
+    &#34;&#34;&#34;
+    Initializer for the torchtext Field objects used to numericalize textual data.  
+    
+    ## Output:  
+    
+    - **CNTXT** *(torchtext.Field)*: Field object for processing context data. Tokenizes data, lowercases,
+        removes stopwords. Numeric data is returned as [batch_size, seq_length] for TDNN consumption.  
+    - **TTL** *(torchtext.Field)*: Field object for processing title data. Tokenizes data, lowercases,
+        removes stopwords. Start and end of sentences are marked with &lt;sos&gt;, &lt;eos&gt; tokens. 
+        Numeric data is returned as [seq_length, batch_size] for Attention Decoder consumption.  
+    - **AUT** *(torchtext.Field)*: Field object for processing author data. Tokenizes data and lowercases.
+        Numeric data is returned as [batch_size, seq_length] for TDNN consumption.     
+    &#34;&#34;&#34;
+    # prepare tokenization functions
+    nlp = spacy.load(&#34;en_core_web_lg&#34;)
+    tokenizer = Tokenizer(nlp.vocab)
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;context&#34;)
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;title_cited&#34;)
+
+    # instantiate fields preprocessing the relevant data
+    TTL = Field(tokenize=ttl_tokenizer, 
+                init_token = &#39;&lt;sos&gt;&#39;, 
+                eos_token = &#39;&lt;eos&gt;&#39;,
+                lower=True,
+                stop_words=STOPWORDS)
+
+    AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
+
+    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+
+    return CNTXT, TTL, AUT
+
+
+def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
+    &#34;&#34;&#34;
+    Initializes torchtext Field and TabularDataset objects used for training.
+    The vocab of the author, context and title fields is built *on the whole dataset*
+    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits. 
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    
+    ## Output:  
+    
+    - **data** *(BaseData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train (*TabularDataset*), valid (*TabularDataset*), test (*TabularDataset*) objects.
+    &#34;&#34;&#34;
+    # set the seed for the data split
+    random.seed(SEED)
+    state = random.getstate()
+
+    logger.info(&#34;Getting fields...&#34;)
+    CNTXT, TTL, AUT = get_fields()
+    # generate torchtext dataset from a .csv given the fields for each datatype
+    # has to be single dataset in order to build proper vocabularies
+    logger.info(&#34;Loading dataset...&#34;)
+    dataset = TabularDataset(str(path_to_data), &#34;CSV&#34;, 
+                       [(&#34;context&#34;, CNTXT), (&#34;authors_citing&#34;, AUT), (&#34;title_cited&#34;, TTL), (&#34;authors_cited&#34;, AUT)],
+                       skip_header=True)
+
+    # build field vocab before splitting data
+    logger.info(&#34;Building vocab...&#34;)
+    TTL.build_vocab(dataset, max_size=30000)
+    AUT.build_vocab(dataset, max_size=30000)
+    CNTXT.build_vocab(dataset, max_size=30000)
+
+    # split dataset
+    train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
+    return BaseData(CNTXT, TTL, AUT, train, valid, test)
+
+
+def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 32) -&gt; IteratorData:
+    &#34;&#34;&#34;
+    Gets path_to_data and delegates tasks to generate buckettized training iterators.  
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
+    - **batch_size** *(int=32)*: BucketIterator minibatch size.  
+    
+    ## Output:  
+    
+    - **Training data** *(IteratorData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
+    &#34;&#34;&#34;
+    
+    data = get_datasets(path_to_data=path_to_data)
+
+    # create bucketted iterators for each dataset
+    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
+                                                                          batch_size = batch_size,
+                                                                          sort_within_batch = True,
+                                                                          sort_key = lambda x : len(x.title_cited))
+    
+    return IteratorData(data.cntxt, data.ttl, data.aut, train_iterator, valid_iterator, test_iterator)
+
+    
+if __name__ == &#39;__main__&#39;:
+    # path_to_data = &#34;/home/timo/DataSets/KD_arxiv_CS/arxiv-cs&#34;
+    # clean_incomplete_data(path_to_data)
+    # prepare_data(path_to_data)
+    data = get_bucketized_iterators(&#34;/home/timo/DataSets/KD_arxiv_CS/arxiv_data.csv&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="ncn.data.author_preprocessing"><code class="name flex">
+<span>def <span class="ident">author_preprocessing</span></span>(<span>text: str) -> List[str]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Applies the following preprocessing steps on a string:
+</p>
+<ol>
+<li>Remove all numbers.
+</li>
+<li>Tokenize.
+</li>
+<li>Remove blanks.
+</li>
+<li>Prune length to max length. </li>
+</ol>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>text</strong> <em>(str)</em>: Text input to be processed.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>List of strings</strong>:
+List containing the preprocessed author tokens.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def author_preprocessing(text: str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Applies the following preprocessing steps on a string:  
+
+    
+    1. Remove all numbers.   
+    2. Tokenize.  
+    3. Remove blanks.  
+    4. Prune length to max length. 
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed author tokens. 
+    &#34;&#34;&#34;
+    text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
+    text = text.split(&#39;,&#39;)
+    text = [token.strip() for token in text if token.strip()]
+
+    # return the sequence up to max length or totally if shorter
+    try:
+        return text[:MAX_AUTHORS]
+    except IndexError:
+        return text</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.clean_incomplete_data"><code class="name flex">
+<span>def <span class="ident">clean_incomplete_data</span></span>(<span>path: Union[pathlib.Path, str]) -> NoneType</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Cleaning function for the arxiv CS dataset. Checks all .txt files in the target folder and looks
+for matching .ref and .meta files. If a file is missing, all others are deleted.<br>
+If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>path</strong> <em>(PathOrStr)</em>: Path object or string to the dataset.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def clean_incomplete_data(path: PathOrStr) -&gt; None:
+    &#34;&#34;&#34;
+    Cleaning function for the arxiv CS dataset. Checks all .txt files in the target folder and looks
+    for matching .ref and .meta files. If a file is missing, all others are deleted.  
+    If any file of the 3 files (.txt, .meta, .refs) is empty, the triple is removed as well.  
+
+    ## Parameters:   
+
+    - **path** *(PathOrStr)*: Path object or string to the dataset.      
+    &#34;&#34;&#34;
+    path = Path(path)
+
+    incomplete_paths = 0
+    empty_files = 0
+    no_files = len(list(path.glob(&#34;*.txt&#34;)))
+
+    for textpath in path.glob(&#34;*.txt&#34;):
+        metapath = textpath.with_suffix(&#34;.meta&#34;)
+        refpath = textpath.with_suffix(&#34;.refs&#34;)
+
+        if ( not metapath.exists() ) or ( not refpath.exists() ):
+            incomplete_paths += 1
+            logger.info(f&#34;Found incomplete file: {textpath.stem}&#34;)
+            textpath.unlink()
+            try:
+                metapath.unlink()
+            except FileNotFoundError:
+                pass
+            try:
+                refpath.unlink()
+            except FileNotFoundError:
+                pass
+        else:
+            with open(textpath, &#39;r&#39;) as f:
+                text = f.read()
+            with open(metapath, &#39;r&#39;) as f:
+                meta = f.read()
+            with open(refpath, &#39;r&#39;) as f:
+                refs = f.read()
+
+            if len(text) == 0 or len(meta) == 0 or len(refs) == 0:
+                empty_files += 1
+                logger.info(f&#34;Found empty file: {textpath.stem}&#34;)
+                textpath.unlink()
+                metapath.unlink()
+                refpath.unlink()
+    
+    message = (f&#34;Incomplete paths(not all files present): {incomplete_paths} out of {no_files}&#34;
+                f&#34;\nAt least one empty file: {empty_files} out of {no_files}&#34;)
+    logger.info(message)</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.generate_context_samples"><code class="name flex">
+<span>def <span class="ident">generate_context_samples</span></span>(<span>contexts: Collection[str], refs: Collection[str], meta: Dict[str, str], textpath: pathlib.Path) -> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Generates citation context samples for a single paper.
+The contexts, references and metadata are expected to be passed in tokenized form.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>contexts</strong> <em>(Collection[str])</em>:
+Citation contexts contained within a paper.
+</li>
+<li><strong>refs</strong> <em>(Collection[str])</em>:
+Reference information corresponding to the contexts.
+</li>
+<li><strong>meta</strong> <em>(Dict[str, str])</em>:
+Dictionary containing metadata of the citing paper.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>samples</strong> <em>(pandas.DataFrame)</em>:
+All fully extractable context samples.
+Each sample has to have information for citation context, citing authors, cited authors and cited title.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def generate_context_samples(contexts: Collection[str], refs: Collection[str], 
+                       meta: Dict[str, str], textpath: Path) -&gt; DataFrame:
+    &#34;&#34;&#34;
+    Generates citation context samples for a single paper. 
+    The contexts, references and metadata are expected to be passed in tokenized form.   
+    
+    ## Parameters:  
+    
+    - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
+    - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
+    - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    
+    ## Output:  
+    
+    - **samples** *(pandas.DataFrame)*:  All fully extractable context samples.
+        Each sample has to have information for citation context, citing authors, cited authors and cited title.  
+    &#34;&#34;&#34;
+    samples = []
+    for sentence in contexts:
+        # return a list of all citations in a sentence
+        hits = re.findall(CITATION_PATTERNS, sentence)
+        for hit in hits:
+            # remove the identifiers as we use them to split .refs file
+            s = re.sub(&#34;GC|DBLP&#34;, &#39;&#39;, hit)
+            for ref in refs:
+                try:
+                    if re.search(s[1:-1], ref):
+                        # find and preprocess authors
+                        authors = re.findall(&#34;;(.*?)\`\`&#34;, ref)
+                        authors = &#39;&#39;.join(authors)
+                        authors = re.sub(r&#34;\band\b&#34;, &#39;,&#39;, authors)
+                        authors = re.sub(r&#34;-&#34;, &#39;&#39;, authors)
+                        authors = authors.strip(&#39;,  &#39;)
+
+                        # skip the sample if there is no author information
+                        if len(authors) == 0:
+                            continue
+                        
+                        # find and preprocess titles
+                        title = re.findall(&#39;\`\`(.*?)\&#39;\&#39;&#39;, ref)
+                        title = &#39;&#39;.join(title).strip(&#39;,&#39;)
+                        
+                        # generate sample in correct format
+                        sample = {&#34;context&#34;: re.sub(CITATION_PATTERNS, &#39;&#39;, sentence),
+                                  &#34;authors_citing&#34;: &#39;,&#39;.join(meta[&#34;authors&#34;]),
+                                  &#34;title_cited&#34;: title,
+                                  &#34;authors_cited&#34;: authors}
+                        samples.append(pd.DataFrame(sample, index=[0]))
+                except:
+                    logger.info(&#39;!&#39;*30)
+                    logger.info(f&#34;Found erroneous ref at {textpath.stem}.&#34;)
+                    logger.info(ref)
+    return samples</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.get_bucketized_iterators"><code class="name flex">
+<span>def <span class="ident">get_bucketized_iterators</span></span>(<span>path_to_data: Union[pathlib.Path, str], batch_size: int = 32) -> <a title="ncn.core.IteratorData" href="core.html#ncn.core.IteratorData">IteratorData</a></span>
+</code></dt>
+<dd>
+<section class="desc"><p>Gets path_to_data and delegates tasks to generate buckettized training iterators.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>path_to_data</strong> <em>(PathOrStr)</em>:
+Path object or string to a .csv dataset.
+</li>
+<li><strong>batch_size</strong> <em>(int=32)</em>: BucketIterator minibatch size.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>Training data</strong> <em>(IteratorData)</em>:
+Container holding CNTXT (<em>Field</em>), TTL (<em>Field</em>), AUT (<em>Field</em>),
+train_iterator (<em>BucketIterator</em>), valid_iterator (<em>BucketIterator</em>), test_iterator (<em>BucketIterator</em>) objects.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 32) -&gt; IteratorData:
+    &#34;&#34;&#34;
+    Gets path_to_data and delegates tasks to generate buckettized training iterators.  
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
+    - **batch_size** *(int=32)*: BucketIterator minibatch size.  
+    
+    ## Output:  
+    
+    - **Training data** *(IteratorData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
+    &#34;&#34;&#34;
+    
+    data = get_datasets(path_to_data=path_to_data)
+
+    # create bucketted iterators for each dataset
+    train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
+                                                                          batch_size = batch_size,
+                                                                          sort_within_batch = True,
+                                                                          sort_key = lambda x : len(x.title_cited))
+    
+    return IteratorData(data.cntxt, data.ttl, data.aut, train_iterator, valid_iterator, test_iterator)</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.get_datasets"><code class="name flex">
+<span>def <span class="ident">get_datasets</span></span>(<span>path_to_data: Union[pathlib.Path, str]) -> <a title="ncn.core.BaseData" href="core.html#ncn.core.BaseData">BaseData</a></span>
+</code></dt>
+<dd>
+<section class="desc"><p>Initializes torchtext Field and TabularDataset objects used for training.
+The vocab of the author, context and title fields is built <em>on the whole dataset</em>
+with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits. </p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>path_to_data</strong> <em>(PathOrStr)</em>:
+Path object or string to a .csv dataset.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>data</strong> <em>(BaseData)</em>:
+Container holding CNTXT (<em>Field</em>), TTL (<em>Field</em>), AUT (<em>Field</em>),
+train (<em>TabularDataset</em>), valid (<em>TabularDataset</em>), test (<em>TabularDataset</em>) objects.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
+    &#34;&#34;&#34;
+    Initializes torchtext Field and TabularDataset objects used for training.
+    The vocab of the author, context and title fields is built *on the whole dataset*
+    with vocab_size=30000 for all fields. The dataset is split into train, valid and test with [0.7, 0.2, 0.1] splits. 
+    
+    ## Parameters:  
+    
+    - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    
+    ## Output:  
+    
+    - **data** *(BaseData)*:  Container holding CNTXT (*Field*), TTL (*Field*), AUT (*Field*), 
+        train (*TabularDataset*), valid (*TabularDataset*), test (*TabularDataset*) objects.
+    &#34;&#34;&#34;
+    # set the seed for the data split
+    random.seed(SEED)
+    state = random.getstate()
+
+    logger.info(&#34;Getting fields...&#34;)
+    CNTXT, TTL, AUT = get_fields()
+    # generate torchtext dataset from a .csv given the fields for each datatype
+    # has to be single dataset in order to build proper vocabularies
+    logger.info(&#34;Loading dataset...&#34;)
+    dataset = TabularDataset(str(path_to_data), &#34;CSV&#34;, 
+                       [(&#34;context&#34;, CNTXT), (&#34;authors_citing&#34;, AUT), (&#34;title_cited&#34;, TTL), (&#34;authors_cited&#34;, AUT)],
+                       skip_header=True)
+
+    # build field vocab before splitting data
+    logger.info(&#34;Building vocab...&#34;)
+    TTL.build_vocab(dataset, max_size=30000)
+    AUT.build_vocab(dataset, max_size=30000)
+    CNTXT.build_vocab(dataset, max_size=30000)
+
+    # split dataset
+    train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
+    return BaseData(CNTXT, TTL, AUT, train, valid, test)</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.get_fields"><code class="name flex">
+<span>def <span class="ident">get_fields</span></span>(<span>) -> Tuple[torchtext.data.field.Field, torchtext.data.field.Field, torchtext.data.field.Field]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Initializer for the torchtext Field objects used to numericalize textual data.
+</p>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>CNTXT</strong> <em>(torchtext.Field)</em>: Field object for processing context data. Tokenizes data, lowercases,
+removes stopwords. Numeric data is returned as [batch_size, seq_length] for TDNN consumption.
+</li>
+<li><strong>TTL</strong> <em>(torchtext.Field)</em>: Field object for processing title data. Tokenizes data, lowercases,
+removes stopwords. Start and end of sentences are marked with <sos>, <eos> tokens.
+Numeric data is returned as [seq_length, batch_size] for Attention Decoder consumption.
+</li>
+<li><strong>AUT</strong> <em>(torchtext.Field)</em>: Field object for processing author data. Tokenizes data and lowercases.
+Numeric data is returned as [batch_size, seq_length] for TDNN consumption.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get_fields() -&gt; Tuple[Field, Field, Field]:
+    &#34;&#34;&#34;
+    Initializer for the torchtext Field objects used to numericalize textual data.  
+    
+    ## Output:  
+    
+    - **CNTXT** *(torchtext.Field)*: Field object for processing context data. Tokenizes data, lowercases,
+        removes stopwords. Numeric data is returned as [batch_size, seq_length] for TDNN consumption.  
+    - **TTL** *(torchtext.Field)*: Field object for processing title data. Tokenizes data, lowercases,
+        removes stopwords. Start and end of sentences are marked with &lt;sos&gt;, &lt;eos&gt; tokens. 
+        Numeric data is returned as [seq_length, batch_size] for Attention Decoder consumption.  
+    - **AUT** *(torchtext.Field)*: Field object for processing author data. Tokenizes data and lowercases.
+        Numeric data is returned as [batch_size, seq_length] for TDNN consumption.     
+    &#34;&#34;&#34;
+    # prepare tokenization functions
+    nlp = spacy.load(&#34;en_core_web_lg&#34;)
+    tokenizer = Tokenizer(nlp.vocab)
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;context&#34;)
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;title_cited&#34;)
+
+    # instantiate fields preprocessing the relevant data
+    TTL = Field(tokenize=ttl_tokenizer, 
+                init_token = &#39;&lt;sos&gt;&#39;, 
+                eos_token = &#39;&lt;eos&gt;&#39;,
+                lower=True,
+                stop_words=STOPWORDS)
+
+    AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
+
+    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+
+    return CNTXT, TTL, AUT</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.prepare_data"><code class="name flex">
+<span>def <span class="ident">prepare_data</span></span>(<span>path: Union[pathlib.Path, str]) -> NoneType</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Extracts citation contexts from each (.txt, .meta, .refs) tupel in the given location
+and stores them in a DataFrame.<br>
+Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].<br>
+The resulting DataFrame is saved as Python pickle object in the parent directory.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>path</strong> <em>(PathOrStr)</em>: Path object or string to the dataset.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def prepare_data(path: PathOrStr) -&gt; None:
+    &#34;&#34;&#34; 
+    Extracts citation contexts from each (.txt, .meta, .refs) tupel in the given location 
+    and stores them in a DataFrame.  
+    Each final sample has the form: [context, title_citing, authors_citing, title_cited, authors_cited].  
+    The resulting DataFrame is saved as Python pickle object in the parent directory.  
+
+    ## Parameters:   
+
+    - **path** *(PathOrStr)*: Path object or string to the dataset.
+    &#34;&#34;&#34;
+    path = Path(path)
+    save_dir = path.parent
+    if not save_dir.exists(): save_dir.mkdir()
+    
+    data = []
+
+    no_total = len(list(path.glob(&#34;*.txt&#34;)))
+    logger.info(&#39;-&#39;*30)
+    logger.info(f&#34;Total number of files to process: {no_total}&#34;)
+    logger.info(&#39;-&#39;*30)
+
+    for textpath in tqdm(path.glob(&#34;*.txt&#34;)):
+        
+        metapath = textpath.with_suffix(&#34;.meta&#34;)
+        refpath = textpath.with_suffix(&#34;.refs&#34;)
+
+        with open(textpath, &#39;r&#39;) as f:
+            text = f.read()
+        with open(metapath, &#39;r&#39;) as f:
+            meta = f.read()
+        with open(refpath, &#39;r&#39;) as f:
+            refs = f.read()
+        
+        # preprocess string data
+        meta = json.loads(meta)
+        text = process_text(text)
+        refs = process_refs(refs)
+        data.extend(generate_context_samples(text, refs, meta, textpath))
+
+
+    dataset = pd.concat(data, axis=0)
+
+    # prune empty fields
+    dataset = dataset[(dataset[&#34;context&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;authors_citing&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;title_cited&#34;] != &#34;&#34;) &amp; 
+                      (dataset[&#34;authors_cited&#34;] != &#34;&#34;)]
+
+    dataset.reset_index(inplace=True)
+    dataset.drop(&#34;index&#34;, axis=1, inplace=True)
+    save_path = save_dir/f&#34;arxiv_data.csv&#34;
+    dataset.to_csv(save_path, compression=None, index=False, index_label=False)
+    logger.info(f&#34;Dataset with {len(dataset)} samples has been saved to: {save_path}.&#34;)</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.process_refs"><code class="name flex">
+<span>def <span class="ident">process_refs</span></span>(<span>refs: str, delimiter_patterns: str = 'GC|DBLP') -> List[str]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Preprocessing function for preprocessing arxiv CS paper references.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>refs</strong> <em>(str)</em>: reference file string.
+</li>
+<li><strong>delimiter_patterns</strong> <em>(str = "GC|DBLP")</em>: regex patterns used to split the inidividual references.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li>List of citation contexts split at <em>delimiter</em>.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def process_refs(refs: str, delimiter_patterns: str = &#34;GC|DBLP&#34;) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Preprocessing function for preprocessing arxiv CS paper references.   
+
+    ## Parameters:   
+
+    - **refs** *(str)*: reference file string.  
+    - **delimiter_patterns** *(str = &#34;GC|DBLP&#34;)*: regex patterns used to split the inidividual references.  
+
+    ## Output:  
+
+    - List of citation contexts split at *delimiter*.
+    &#34;&#34;&#34;
+    refs = re.sub(&#34;\n&#34;, &#39;&#39;, refs)
+    return re.split(delimiter_patterns, refs)</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.process_text"><code class="name flex">
+<span>def <span class="ident">process_text</span></span>(<span>text: str, delimiter: str = '\n============\n') -> List[str]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Preprocessing function for preprocessing arxiv CS paper text.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>text</strong> <em>(str)</em>: .txt file string object containing the text of a paper.
+</li>
+<li><strong>delimiter</strong> <em>(str = "\n============\n")</em>: token separating text sentences.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li>List with sentences split at <em>delimiter</em>. Only sentences containing <em>CITATION_PATTERNS</em> are retained.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def process_text(text: str, delimiter: str = &#34;\n============\n&#34;) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Preprocessing function for preprocessing arxiv CS paper text.  
+
+    ## Parameters:   
+
+    - **text** *(str)*: .txt file string object containing the text of a paper.  
+    - **delimiter** *(str = &#34;\\n============\\n&#34;)*: token separating text sentences.  
+
+    ## Output:  
+
+    - List with sentences split at *delimiter*. Only sentences containing *CITATION_PATTERNS* are retained.
+    &#34;&#34;&#34;
+    text = re.sub(&#34;&lt;formula&gt;&#34;, &#39;&#39;, text)
+    sentences = text.split(delimiter)
+    contexts = []
+    for sentence in sentences:
+        if re.search(CITATION_PATTERNS, sentence):
+            contexts.append(sentence)
+    return contexts</code></pre>
+</details>
+</dd>
+<dt id="ncn.data.title_context_preprocessing"><code class="name flex">
+<span>def <span class="ident">title_context_preprocessing</span></span>(<span>text: str, tokenizer: spacy.tokenizer.Tokenizer, identifier: str) -> List[str]</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Applies the following preprocessing steps on a string:
+</p>
+<ol>
+<li>Replace digits</li>
+<li>Remove all punctuation.
+</li>
+<li>Tokenize.
+</li>
+<li>Remove numbers.
+</li>
+<li>Lemmatize.
+</li>
+<li>Remove blanks
+</li>
+<li>Prune length to max length (different for contexts and titles)
+</li>
+</ol>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><strong>text</strong> <em>(str)</em>: Text input to be processed.
+</li>
+<li><strong>tokenizer</strong> <em>(spacy.tokenizer.Tokenizer)</em>: SpaCy tokenizer object used to split the string into tokens.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>List of strings</strong>:
+List containing the preprocessed tokens.</li>
+</ul></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Applies the following preprocessing steps on a string:  
+ 
+    1. Replace digits
+    2. Remove all punctuation.  
+    3. Tokenize.  
+    4. Remove numbers.  
+    5. Lemmatize.   
+    6. Remove blanks  
+    7. Prune length to max length (different for contexts and titles)  
+    
+    ## Parameters:  
+    
+    - **text** *(str)*: Text input to be processed.  
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    
+    ## Output:  
+    
+    - **List of strings**:  List containing the preprocessed tokens.
+    &#34;&#34;&#34;
+    text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
+    text = re.sub(&#34;[&#34; + re.escape(string.punctuation) + &#34;]&#34;, &#34; &#34;, text)
+    text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
+    text = [token for token in text if token.strip()]
+
+    # return the sequence up to max length or totally if shorter
+    # max length depends on the type of processed text
+    if identifier == &#34;context&#34;:
+        try:
+            return text[:MAX_CONTEXT_LENGTH]
+        except IndexError:
+            return text
+    elif identifier == &#34;title_cited&#34;:
+        try:
+            return text[:MAX_TITLE_LENGTH]
+        except IndexError:
+            return text
+    else:
+        raise NameError(&#34;Identifier name could not be found.&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="ncn" href="index.html">ncn</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="ncn.data.author_preprocessing" href="#ncn.data.author_preprocessing">author_preprocessing</a></code></li>
+<li><code><a title="ncn.data.clean_incomplete_data" href="#ncn.data.clean_incomplete_data">clean_incomplete_data</a></code></li>
+<li><code><a title="ncn.data.generate_context_samples" href="#ncn.data.generate_context_samples">generate_context_samples</a></code></li>
+<li><code><a title="ncn.data.get_bucketized_iterators" href="#ncn.data.get_bucketized_iterators">get_bucketized_iterators</a></code></li>
+<li><code><a title="ncn.data.get_datasets" href="#ncn.data.get_datasets">get_datasets</a></code></li>
+<li><code><a title="ncn.data.get_fields" href="#ncn.data.get_fields">get_fields</a></code></li>
+<li><code><a title="ncn.data.prepare_data" href="#ncn.data.prepare_data">prepare_data</a></code></li>
+<li><code><a title="ncn.data.process_refs" href="#ncn.data.process_refs">process_refs</a></code></li>
+<li><code><a title="ncn.data.process_text" href="#ncn.data.process_text">process_text</a></code></li>
+<li><code><a title="ncn.data.title_context_preprocessing" href="#ncn.data.title_context_preprocessing">title_context_preprocessing</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
