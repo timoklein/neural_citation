@@ -18,6 +18,7 @@ Filters = List[int]
 Stringlike = Union[str, List[str]]
 """Single string or list of strings for evaluating recall."""
 
+
 class IteratorData(NamedTuple):
     """ Container holding the iterators needed to train the NCN model."""
 
@@ -77,14 +78,15 @@ class BaseData(NamedTuple):
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
 
+# TODO: Make this as Spacy + NLTK Stopwords
 STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
 """Set of stopwords obtained via spacy."""
 
-# optimal = 18
+# TODO: Tune this
 MAX_TITLE_LENGTH = 15
 """Maximum decoder sequence length. Also determines the number of attention weights."""
 
-# optimal = 50
+# TODO: Tune this
 MAX_CONTEXT_LENGTH = 21
 """Maximum encoder sequence length."""
 

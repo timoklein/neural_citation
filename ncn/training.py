@@ -168,7 +168,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
         
     return epoch_loss / len(iterator)
 
-
+# TODO: Gradient clipping 1
 def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
                 n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
                 save_dir: PathOrStr = "./models") -> Tuple[List[float]]:

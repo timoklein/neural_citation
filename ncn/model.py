@@ -287,7 +287,7 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        
+        # TODO: GRU vs LSTM, bidirectional, 1 vs 2 layers
         self.rnn = getattr(nn, rnn_type)(
                            input_size=enc_num_filters + embed_size,
                            hidden_size=hidden_size,
@@ -525,6 +525,7 @@ class NeuralCitationNetwork(nn.Module):
             else:
                 output, hidden = self.decoder(output, hidden, encoder_outputs)
             outputs[t] = output
+            # TODO: Try teacher forcing 0.5
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]
             output = (title[t] if teacher_force else top1)
