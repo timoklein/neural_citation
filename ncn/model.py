@@ -273,7 +273,9 @@ class Decoder(nn.Module):
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, attention: nn.Module, show_attention: bool):
+                 pad_idx: int, dropout_p: float, 
+                 num_layers: int, rnn_type: str, bidirectional: bool,
+                 attention: nn.Module, show_attention: bool):
         super().__init__()
 
         self.embed_size = embed_size
@@ -286,7 +288,12 @@ class Decoder(nn.Module):
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
         
-        self.rnn = nn.GRU(enc_num_filters + embed_size, hidden_size)
+        self.rnn = getattr(nn, rnn_type)(
+                           input_size=enc_num_filters + embed_size,
+                           hidden_size=hidden_size,
+                           num_layers=num_layers,
+                           dropout=self.dropout_p, 
+                           bidirectional=bidirectional)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
@@ -385,7 +392,9 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
-                       num_layers: int = 2,
+                       rnn_type: str = "GRU",
+                       num_layers: int = 2, 
+                       bidirectional: bool = False,
                        hidden_size: int = 128,
                        dropout_p: float = 0.2,
                        show_attention: bool = False):
@@ -403,8 +412,10 @@ class NeuralCitationNetwork(nn.Module):
         self.author_vocab_size = author_vocab_size
         self.pad_idx = pad_idx
 
+        self.rnn_type = rnn_type
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+        self.bidirectional = bidirectional
 
         self.dropout_p = dropout_p
         self.show_attention = show_attention
@@ -436,6 +447,9 @@ class NeuralCitationNetwork(nn.Module):
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
+                               num_layers = self.num_layers,
+                               rnn_type = self.rnn_type,
+                               bidirectional = self.bidirectional,
                                attention = self.attention,
                                show_attention=self.show_attention)
         
@@ -448,7 +462,8 @@ class NeuralCitationNetwork(nn.Module):
             f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
             f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
             f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
-            f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+            f"\nDecoder: RNN type = {self.rnn_type},  # RNN cells = {self.num_layers}, Hidden size = {self.hidden_size}, "
+            f"bidirectional={self.bidirectional}"
             f"\nParameters: Dropout = {self.dropout_p}, Show attention = {self.show_attention}"
             "\n-------------------------------------------------"
         )
