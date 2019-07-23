@@ -7,7 +7,7 @@ import spacy
 import random
 from tqdm import tqdm
 from pathlib import Path
-from typing import Union, Collection, List, Dict, Tuple
+from typing import Union, Collection, List, Dict, Tuple, Set
 from collections import Counter
 from functools import partial
 from pandas import DataFrame
@@ -16,8 +16,8 @@ from spacy.lang.en import English
 from torchtext.data import Field, BucketIterator, Dataset, TabularDataset
 
 import ncn.core
-from ncn.core import PathOrStr, IteratorData, BaseData
-from ncn.core import CITATION_PATTERNS, STOPWORDS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, SEED
+from ncn.core import PathOrStr, IteratorData, BaseData, get_stopwords
+from ncn.core import CITATION_PATTERNS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MAX_AUTHORS, SEED
 
 
 
@@ -226,8 +226,8 @@ def prepare_data(path: PathOrStr) -> None:
     dataset.to_csv(save_path, compression=None, index=False, index_label=False)
     logger.info(f"Dataset with {len(dataset)} samples has been saved to: {save_path}.")
 
-# TODO: Remove both spacy and NLTK stopwords
-def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
+
+def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
  
@@ -251,6 +251,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str)
     text = re.sub("\d*?", '', text)
     text = re.sub("[" + re.escape(string.punctuation) + "]", " ", text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
+    text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
@@ -315,19 +316,21 @@ def get_fields() -> Tuple[Field, Field, Field]:
     # prepare tokenization functions
     nlp = spacy.load("en_core_web_lg")
     tokenizer = Tokenizer(nlp.vocab)
-    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="context")
-    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="title_cited")
+    STOPWORDS = get_stopwords()
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer,
+                              STOPWORDS=STOPWORDS, identifier="context")
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, 
+                            STOPWORDS=STOPWORDS, identifier="title_cited")
 
     # instantiate fields preprocessing the relevant data
     TTL = Field(tokenize=ttl_tokenizer, 
                 init_token = '<sos>', 
                 eos_token = '<eos>',
-                lower=True,
-                stop_words=STOPWORDS)
+                lower=True)
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, stop_words=STOPWORDS, batch_first=True)
+    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, batch_first=True)
 
     return CNTXT, TTL, AUT
 

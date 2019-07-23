@@ -1,10 +1,11 @@
 import torch
 import spacy
+import nltk
 import logging
 from spacy.lang.en import English
 from typing import Union, List
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Set
 from torchtext.data import Field, BucketIterator, TabularDataset
 
 
@@ -78,16 +79,11 @@ class BaseData(NamedTuple):
 CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
 
-# TODO: Make this as Spacy + NLTK Stopwords
-STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
-"""Set of stopwords obtained via spacy."""
 
-# TODO: Tune this
-MAX_TITLE_LENGTH = 15
+MAX_TITLE_LENGTH = 17
 """Maximum decoder sequence length. Also determines the number of attention weights."""
 
-# TODO: Tune this
-MAX_CONTEXT_LENGTH = 21
+MAX_CONTEXT_LENGTH = 50
 """Maximum encoder sequence length."""
 
 MAX_AUTHORS = 5
@@ -107,3 +103,17 @@ logger = logging.getLogger("neural_citation")
     Base logger for the neural citation package.
     The package wide logging level is set here.
 """
+
+# general functions
+def get_stopwords() -> Set:
+    """
+    Returns spacy and nltk stopwords unified into a single set.   
+    
+    ## Output:  
+    
+    - **STOPWORDS** *(Set)*: Set containing the stopwords for preprocessing 
+    """
+    STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
+    nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
+    return STOPWORDS.update(nltk_stopwords)
+    
