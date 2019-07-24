@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 import ncn.core
-from ncn.core import Filters, DEVICE
+from ncn.core import Filters, DEVICE, RNN_id
 
 logger = logging.getLogger("neural_citation.ncn")
 
@@ -286,7 +286,6 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        # TODO: GRU vs LSTM, 1 vs 2 layers
         self.rnn = getattr(nn, rnn_type)(
                            input_size=enc_num_filters + embed_size,
                            hidden_size=hidden_size,
@@ -390,7 +389,7 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
-                       rnn_type: str = "GRU",
+                       rnn_type: RNN_id = "GRU",
                        num_layers: int = 2, 
                        hidden_size: int = 128,
                        dropout_p: float = 0.2,

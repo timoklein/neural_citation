@@ -169,8 +169,8 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     return epoch_loss / len(iterator)
 
 # TODO: Gradient clipping 1
-# TODO: Pass model name to save as argument
 def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
+                model_name: str,
                 n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
                 save_dir: PathOrStr = "./models") -> Tuple[List[float]]:
     """
@@ -233,8 +233,8 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             if not save_dir.exists(): save_dir.mkdir()
-            torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}.pt")
-            with open(save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_settings.txt", "w") as file:
+            torch.save(model.state_dict(), save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_{model_name}.pt")
+            with open(save_dir/f"NCN_{date.month}_{date.day}_{date.hour}_{model_name}_settings.txt", "w") as file:
                 file.write(settings + f", Valid loss = {valid_loss}")
         
         logger.info(f"Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s")
