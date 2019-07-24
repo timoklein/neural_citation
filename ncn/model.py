@@ -206,6 +206,7 @@ class NCNEncoder(nn.Module):
         return context
 
 
+# TODO: Document this again
 class Attention(nn.Module):
     """
     Base attention module as published in the paper https://arxiv.org/abs/1409.0473.
@@ -245,7 +246,8 @@ class Attention(nn.Module):
         logger.debug(f"Attention Batch size: {batch_size}")
         logger.debug(f"Attention weights: {src_len}")
         
-        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+        # Use only the last hidden state in case of multiple layers, i.e. hidden[-1]
+        hidden = hidden[-1].unsqueeze(1).repeat(1, src_len, 1)
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
         energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
         
@@ -273,10 +275,12 @@ class Decoder(nn.Module):
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
                  pad_idx: int, dropout_p: float, 
-                 num_layers: int, rnn_type: str,
+                 num_layers: int, rnn_type: RNN_type,
                  attention: nn.Module, show_attention: bool):
         super().__init__()
 
+        self.rnn_type = rnn_type
+        self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
         self.hidden_size = hidden_size
@@ -299,7 +303,7 @@ class Decoder(nn.Module):
     
     def init_hidden(self, bs: int):
         """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
-        return torch.zeros(bs, self.hidden_size, device=DEVICE)
+        return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
         """
@@ -336,10 +340,7 @@ class Decoder(nn.Module):
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
         logger.debug(f"RNN input shape: {rnn_input.shape}")  
-        output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
-        
-        # sanity check
-        assert (output == hidden).all()
+        output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
         output = output.squeeze(0)
@@ -351,9 +352,9 @@ class Decoder(nn.Module):
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
         
         if self.show_attention:
-            return output, hidden.squeeze(0), a.squeeze(1)
+            return output, hidden_size, a.squeeze(1)
 
-        return output, hidden.squeeze(0)
+        return output, hidden
 
 
 # TODO: Update docs
