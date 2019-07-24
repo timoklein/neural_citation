@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 import ncn.core
-from ncn.core import Filters, DEVICE, RNN_type
+from ncn.core import Filters, DEVICE
 
 logger = logging.getLogger("neural_citation.ncn")
 
@@ -274,12 +274,10 @@ class Decoder(nn.Module):
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, 
-                 num_layers: int, rnn_type: RNN_type,
+                 pad_idx: int, dropout_p: float, num_layers: int,
                  attention: nn.Module, show_attention: bool):
         super().__init__()
 
-        self.rnn_type = rnn_type
         self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
@@ -290,11 +288,10 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        self.rnn = getattr(nn, rnn_type)(
-                           input_size=enc_num_filters + embed_size,
-                           hidden_size=hidden_size,
-                           num_layers=num_layers,
-                           dropout=self.dropout_p)
+        self.rnn = nn.GRU(input_size=enc_num_filters + embed_size,
+                          hidden_size=hidden_size,
+                          num_layers=num_layers,
+                          dropout=self.dropout_p)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
@@ -302,7 +299,7 @@ class Decoder(nn.Module):
     
     
     def init_hidden(self, bs: int):
-        """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
+        """Initializes the RNN hidden state to a tensor of zeros of appropriate size."""
         return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
@@ -310,14 +307,14 @@ class Decoder(nn.Module):
         ## Input:  
         
         - **title** *(batch size)*: Batch of initial title tokens.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
             Encoded context and author information. 
         
         ## Output:  
         
         - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         """
         
         input = title.unsqueeze(0)
@@ -376,8 +373,8 @@ class NeuralCitationNetwork(nn.Module):
     - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
     - **authors** *(bool=True)*: Use author information in the encoder.  
     - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
-    - **num_layers** *(int=2)*: Number of GRU layers.  
-    - **hidden_size** *(int=128)*: Dimension of the GRU hidden states.  
+    - **num_layers** *(int=2)*: Number of recurrent layers.  
+    - **hidden_size** *(int=128)*: Dimension of the recurrent unit hidden states.  
     - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
     - **show_attention** *(bool=false)*: Returns attention tensors if true.  
     """
@@ -390,7 +387,6 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
-                       rnn_type: RNN_type = "GRU",
                        num_layers: int = 2, 
                        hidden_size: int = 128,
                        dropout_p: float = 0.2,
@@ -409,7 +405,6 @@ class NeuralCitationNetwork(nn.Module):
         self.author_vocab_size = author_vocab_size
         self.pad_idx = pad_idx
 
-        self.rnn_type = rnn_type
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
@@ -444,7 +439,6 @@ class NeuralCitationNetwork(nn.Module):
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
                                num_layers = self.num_layers,
-                               rnn_type = self.rnn_type,
                                attention = self.attention,
                                show_attention=self.show_attention)
         
@@ -457,7 +451,7 @@ class NeuralCitationNetwork(nn.Module):
             f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
             f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
             f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
-            f"\nDecoder: RNN type = {self.rnn_type},  # RNN cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+            f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
             f"\nParameters: Dropout = {self.dropout_p}, Show attention = {self.show_attention}"
             "\n-------------------------------------------------"
         )
