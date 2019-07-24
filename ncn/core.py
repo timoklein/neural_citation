@@ -116,5 +116,6 @@ def get_stopwords() -> Set:
     """
     STOPWORDS = spacy.lang.en.stop_words.STOP_WORDS
     nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
-    return STOPWORDS.update(nltk_stopwords)
+    STOPWORDS.update(nltk_stopwords)
+    return STOPWORDS
     
