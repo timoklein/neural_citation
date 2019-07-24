@@ -19,8 +19,6 @@ Filters = List[int]
 Stringlike = Union[str, List[str]]
 """Single string or list of strings for evaluating recall."""
 
-RNN_type = Union["GRU", "LSTM"]
-
 class IteratorData(NamedTuple):
     """ Container holding the iterators needed to train the NCN model."""
 
