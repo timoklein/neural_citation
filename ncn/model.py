@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 import ncn.core
-from ncn.core import Filters, DEVICE, RNN_id
+from ncn.core import Filters, DEVICE, RNN_type
 
 logger = logging.getLogger("neural_citation.ncn")
 
@@ -389,7 +389,7 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
-                       rnn_type: RNN_id = "GRU",
+                       rnn_type: RNN_type = "GRU",
                        num_layers: int = 2, 
                        hidden_size: int = 128,
                        dropout_p: float = 0.2,
