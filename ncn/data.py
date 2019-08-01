@@ -21,7 +21,7 @@ from ncn.core import CITATION_PATTERNS, MAX_TITLE_LENGTH, MAX_CONTEXT_LENGTH, MA
 
 
 
-logger = logging.getLogger("neural_citation.data")
+logger = logging.getLogger(__name__)
 
 
 def process_text(text: str, delimiter: str = "\n============\n") -> List[str]:

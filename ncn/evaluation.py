@@ -16,7 +16,7 @@ import ncn.core
 from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE, Filters
 from ncn.model import NeuralCitationNetwork
 
-logger = logging.getLogger("neural_citation.evaluation")
+logger = logging.getLogger(__name__)
 
 
 # TODO: Document this

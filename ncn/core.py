@@ -97,7 +97,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # base logger for the ncn module
 logging.basicConfig(level=logging.INFO, style='$')
-logger = logging.getLogger("neural_citation")
+logger = logging.getLogger(__name__)
 """
     Base logger for the neural citation package.
     The package wide logging level is set here.

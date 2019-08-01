@@ -20,7 +20,7 @@ from ncn.core import DEVICE, SEED, PathOrStr
 from ncn.data import get_bucketized_iterators
 from ncn.model import NeuralCitationNetwork
 
-logger = logging.getLogger("neural_citation.train")
+logger = logging.getLogger(__name__)
 
 
 def init_weights(m):

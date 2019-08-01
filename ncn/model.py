@@ -10,7 +10,7 @@ from torch import Tensor
 import ncn.core
 from ncn.core import Filters, DEVICE
 
-logger = logging.getLogger("neural_citation.ncn")
+logger = logging.getLogger(__name__)
 
 
 class TDNN(nn.Module):
