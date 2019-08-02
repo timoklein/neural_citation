@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 import ncn.core
-from ncn.core import Filters, DEVICE
+from ncn.core import Filters, DEVICE, RNN_type
 
 logger = logging.getLogger(__name__)
 
@@ -274,10 +274,11 @@ class Decoder(nn.Module):
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, num_layers: int,
+                 pad_idx: int, dropout_p: float, num_layers: int, rnn_type: RNN_type,
                  attention: nn.Module, show_attention: bool):
         super().__init__()
 
+        self.rnn_type = rnn_type
         self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
@@ -288,20 +289,29 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        self.rnn = nn.GRU(input_size=enc_num_filters + embed_size,
-                          hidden_size=hidden_size,
-                          num_layers=num_layers,
-                          dropout=self.dropout_p)
+        self.rnn = getattr(nn, rnn_type)(
+                           input_size=enc_num_filters + embed_size,
+                           hidden_size=hidden_size,
+                           num_layers=num_layers,
+                           dropout=self.dropout_p)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
         self.dropout = nn.Dropout(dropout_p)
     
+    def _get_hidden(self):
+        pass
     
     def init_hidden(self, bs: int):
         """Initializes the RNN hidden state to a tensor of zeros of appropriate size."""
-        return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
+        if self.rnn_type == "GRU":
+            return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
+        elif self.rnn_type == "LSTM":
+            h = torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
+            c = torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
+            return h, c
     
+    # TODO: fix inputs here for LSTM
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
         """
         ## Input:  
@@ -324,7 +334,8 @@ class Decoder(nn.Module):
         
         embedded = self.dropout(self.embedding(input))
         logger.debug(f"Embedded shape: {embedded.shape}")
-         
+        
+        # TODO: For LSTM; feed in only hidden
         a = self.attention(hidden, encoder_outputs)
         a = a.unsqueeze(1)
         logger.debug(f"Attention output shape: {a.shape}")
@@ -336,7 +347,8 @@ class Decoder(nn.Module):
         logger.debug(f"Weighted shape: {weighted.shape}")
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
-        logger.debug(f"RNN input shape: {rnn_input.shape}")  
+        logger.debug(f"RNN input shape: {rnn_input.shape}")
+        # TODO: Fix this for LSTM  
         output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
@@ -351,6 +363,7 @@ class Decoder(nn.Module):
         if self.show_attention:
             return output, hidden_size, a.squeeze(1)
 
+        # TODO: Fix this for LSTM
         return output, hidden
 
 
@@ -387,6 +400,7 @@ class NeuralCitationNetwork(nn.Module):
                        num_filters: int = 128,
                        authors: bool = True, 
                        embed_size: int = 128,
+                       rnn_type : RNN_type = "GRU",
                        num_layers: int = 2, 
                        hidden_size: int = 128,
                        dropout_p: float = 0.2,
@@ -405,6 +419,7 @@ class NeuralCitationNetwork(nn.Module):
         self.author_vocab_size = author_vocab_size
         self.pad_idx = pad_idx
 
+        self.rnn_type = rnn_type
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
@@ -438,6 +453,7 @@ class NeuralCitationNetwork(nn.Module):
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
+                               rnn_type = self.rnn_type,
                                num_layers = self.num_layers,
                                attention = self.attention,
                                show_attention=self.show_attention)
@@ -451,7 +467,7 @@ class NeuralCitationNetwork(nn.Module):
             f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
             f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
             f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
-            f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+            f"\nDecoder: RNN type = {self.rnn_type},  # RNN cells = {self.num_layers}, Hidden size = {self.hidden_size}"
             f"\nParameters: Dropout = {self.dropout_p}, Show attention = {self.show_attention}"
             "\n-------------------------------------------------"
         )
@@ -503,8 +519,10 @@ class NeuralCitationNetwork(nn.Module):
             attentions = torch.zeros((max_len, batch_size, encoder_outputs.shape[0])).to(DEVICE)
             logger.debug(f"Attentions viz shape: {attentions.shape}")
         
+        # TODO: Fix for LSTM
         hidden= self.decoder.init_hidden(batch_size)
         
+        # TODO: Fix for LSTM cell state
         for t in range(1, max_len):
             if self.show_attention:
                 output, hidden, attention = self.decoder(output, hidden, encoder_outputs)
