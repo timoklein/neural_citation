@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 import ncn.core
-from ncn.core import Filters, DEVICE, RNN_type
+from ncn.core import Filters, DEVICE
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class TDNN(nn.Module):
 
     - **filter_size** *(int)*: filter length for the convolutional operation  
     - **embed_size** *(int)*: Dimension of the input word embeddings  
-    - **num_filters** *(int=64)*: Number of convolutional filters  
+    - **num_filters** *(int)*: Number of convolutional filters  
     """
 
     def __init__(self, filter_size: int, 
@@ -33,7 +33,7 @@ class TDNN(nn.Module):
         super().__init__()
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         # no bias to avoid accumulating biases on padding
-        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=False)
+        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=True)
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -127,10 +127,9 @@ class NCNEncoder(nn.Module):
     Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
-    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
@@ -179,8 +178,8 @@ class NCNEncoder(nn.Module):
         ## Output:  
         
         - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-            If authors= True the output tensor contains the concatenated context and author encodings.
-            Else the encoded context is returned.
+            If authors=True the output tensor contains the concatenated context and author encodings.
+            If authors=False the encoded context is returned.
         """
         # Embed and encode context
         context = self.dropout(self.context_embedding(context))
@@ -206,16 +205,15 @@ class NCNEncoder(nn.Module):
         return context
 
 
-# TODO: Document this again
 class Attention(nn.Module):
     """
-    Base attention module as published in the paper https://arxiv.org/abs/1409.0473.
+    Bahdanau-attention module as published in the paper https://arxiv.org/abs/1409.0473.
     The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
     - **enc_num_filters** *(int)*: Number of filters used in the encoder.  
-    - **dec_hid_dim** *(int)*: Dimensions of the decoder RNN layer hidden state.   
+    - **dec_hid_dim** *(int)*: Dimensions of the top GRU layer hidden state.   
     """
     def __init__(self, enc_num_filters: int , dec_hid_dim: int):
         super().__init__()
@@ -257,7 +255,7 @@ class Attention(nn.Module):
         
         return torch.softmax(attention, dim=1)
 
-# TODO: Update docs
+
 class Decoder(nn.Module):
     """
     Attention decoder for a Seq2Seq model. Uses a GRU layer as recurrent unit.  
@@ -271,10 +269,12 @@ class Decoder(nn.Module):
     - **hidden_size** *(int)*: Specifies the dimensions of the hidden GRU layer state.  
     - **pad_idx** *(int)*: Index used for pad tokens. Will be ignored by the embedding layer.  
     - **dropout_p** *(float)*: Dropout probability.  
+    - **num_layers** *(int)*: Number of GRU layers.  
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
+    - **show_attention** *(bool)*: If true, the attention weights are returned by the decoder with the outputs.
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, num_layers: int, rnn_type: RNN_type,
+                 pad_idx: int, dropout_p: float, num_layers: int,
                  attention: nn.Module, show_attention: bool):
         super().__init__()
 
@@ -289,29 +289,19 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        self.rnn = getattr(nn, rnn_type)(
-                           input_size=enc_num_filters + embed_size,
-                           hidden_size=hidden_size,
-                           num_layers=num_layers,
-                           dropout=self.dropout_p)
+        self.rnn = nn.GRU(input_size=enc_num_filters + embed_size,
+                          hidden_size=hidden_size,
+                          num_layers=num_layers,
+                          dropout=self.dropout_p)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
         self.dropout = nn.Dropout(dropout_p)
     
-    def _get_hidden(self):
-        pass
-    
     def init_hidden(self, bs: int):
-        """Initializes the RNN hidden state to a tensor of zeros of appropriate size."""
-        if self.rnn_type == "GRU":
-            return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
-        elif self.rnn_type == "LSTM":
-            h = torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
-            c = torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
-            return h, c
+        """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
+        return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
-    # TODO: fix inputs here for LSTM
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
         """
         ## Input:  
@@ -325,6 +315,7 @@ class Decoder(nn.Module):
         
         - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
         - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
+        - **a** *(batch size, # TDNN encoders, hidden_dim): Attention weights for the input encodings.  
         """
         
         input = title.unsqueeze(0)
@@ -335,7 +326,6 @@ class Decoder(nn.Module):
         embedded = self.dropout(self.embedding(input))
         logger.debug(f"Embedded shape: {embedded.shape}")
         
-        # TODO: For LSTM; feed in only hidden
         a = self.attention(hidden, encoder_outputs)
         a = a.unsqueeze(1)
         logger.debug(f"Attention output shape: {a.shape}")
@@ -348,7 +338,6 @@ class Decoder(nn.Module):
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
         logger.debug(f"RNN input shape: {rnn_input.shape}")
-        # TODO: Fix this for LSTM  
         output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
@@ -363,11 +352,9 @@ class Decoder(nn.Module):
         if self.show_attention:
             return output, hidden_size, a.squeeze(1)
 
-        # TODO: Fix this for LSTM
         return output, hidden
 
 
-# TODO: Update docs
 class NeuralCitationNetwork(nn.Module):
     """
     PyTorch implementation of the neural citation network by Ebesu & Fang.  
@@ -377,17 +364,17 @@ class NeuralCitationNetwork(nn.Module):
     https://github.com/tebesu/NeuralCitationNetwork.  
 
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
     - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
-    - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
-    - **authors** *(bool=True)*: Use author information in the encoder.  
-    - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
-    - **num_layers** *(int=2)*: Number of recurrent layers.  
-    - **hidden_size** *(int=128)*: Dimension of the recurrent unit hidden states.  
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **authors** *(bool)*: Use author information in the encoder.  
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of recurrent layers.  
+    - **hidden_size** *(int)*: Dimension of the recurrent unit hidden states.  
     - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
     - **show_attention** *(bool=false)*: Returns attention tensors if true.  
     """
@@ -397,12 +384,11 @@ class NeuralCitationNetwork(nn.Module):
                        title_vocab_size: int,
                        author_vocab_size: int,
                        pad_idx: int,
-                       num_filters: int = 128,
-                       authors: bool = True, 
-                       embed_size: int = 128,
-                       rnn_type : RNN_type = "GRU",
-                       num_layers: int = 2, 
-                       hidden_size: int = 128,
+                       num_filters: int,
+                       authors: bool, 
+                       embed_size: int,
+                       num_layers: int, 
+                       hidden_size: int,
                        dropout_p: float = 0.2,
                        show_attention: bool = False):
         super().__init__()
@@ -419,17 +405,11 @@ class NeuralCitationNetwork(nn.Module):
         self.author_vocab_size = author_vocab_size
         self.pad_idx = pad_idx
 
-        self.rnn_type = rnn_type
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
         self.dropout_p = dropout_p
         self.show_attention = show_attention
-
-        # sanity check
-        msg = (f"# Filters={self.num_filters}, Hidden dimension={self.hidden_size}, Embedding dimension={self.embed_size}"
-               f"\nThese don't match!")
-        assert self.num_filters == self.hidden_size == self.embed_size, msg
 
         #---------------------------------------------------------------------------------------------------------------
         # NCN MODEL
@@ -453,7 +433,6 @@ class NeuralCitationNetwork(nn.Module):
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
-                               rnn_type = self.rnn_type,
                                num_layers = self.num_layers,
                                attention = self.attention,
                                show_attention=self.show_attention)
@@ -467,7 +446,7 @@ class NeuralCitationNetwork(nn.Module):
             f"Context filter length = {self.context_filter_list},  Context filter length = {self.author_filter_list}"
             f"\nEmbeddings: Dimension = {self.embed_size}, Pad index = {self.pad_idx}, Context vocab = {self.context_vocab_size}, "
             f"Author vocab = {self.author_vocab_size}, Title vocab = {self.title_vocab_size}"
-            f"\nDecoder: RNN type = {self.rnn_type},  # RNN cells = {self.num_layers}, Hidden size = {self.hidden_size}"
+            f"\nDecoder: # GRU cells = {self.num_layers}, Hidden size = {self.hidden_size}"
             f"\nParameters: Dropout = {self.dropout_p}, Show attention = {self.show_attention}"
             "\n-------------------------------------------------"
         )
@@ -519,10 +498,8 @@ class NeuralCitationNetwork(nn.Module):
             attentions = torch.zeros((max_len, batch_size, encoder_outputs.shape[0])).to(DEVICE)
             logger.debug(f"Attentions viz shape: {attentions.shape}")
         
-        # TODO: Fix for LSTM
         hidden= self.decoder.init_hidden(batch_size)
         
-        # TODO: Fix for LSTM cell state
         for t in range(1, max_len):
             if self.show_attention:
                 output, hidden, attention = self.decoder(output, hidden, encoder_outputs)
@@ -531,7 +508,6 @@ class NeuralCitationNetwork(nn.Module):
             else:
                 output, hidden = self.decoder(output, hidden, encoder_outputs)
             outputs[t] = output
-            # TODO: Try teacher forcing 0.5
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]
             output = (title[t] if teacher_force else top1)

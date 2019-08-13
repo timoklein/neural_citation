@@ -168,7 +168,7 @@ def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
         
     return epoch_loss / len(iterator)
 
-# TODO: Gradient clipping 1
+
 def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator: BucketIterator, pad: int, 
                 model_name: str,
                 n_epochs: int = 20, clip: float = 5., lr: float = 0.001, 
@@ -194,7 +194,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
 
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="sum")
+    criterion = nn.CrossEntropyLoss(ignore_index = pad, reduction="mean")
 
     best_valid_loss = float('inf')
     training_losses = []

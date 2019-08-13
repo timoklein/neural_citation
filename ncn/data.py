@@ -374,7 +374,7 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     return BaseData(CNTXT, TTL, AUT, train, valid, test)
 
 
-def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 32) -> IteratorData:
+def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -> IteratorData:
     """
     Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
