@@ -20,7 +20,8 @@ The neural_citation.yml file contains a list of packages used to implement this 
 For training the model it is recommended to use the GPU version of Pytorch instead.
 
 ## Getting started
-Project structure:  
+Project structure: 
+    
     .
     ├── assets  # experiments in the EACL paper
     |   ├── various images # used for the NCN presentation
