@@ -10,7 +10,7 @@ from torch import Tensor
 import ncn.core
 from ncn.core import Filters, DEVICE
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("neural_citation.ncn")
 
 
 class TDNN(nn.Module):
@@ -33,7 +33,7 @@ class TDNN(nn.Module):
         super().__init__()
         # model input shape: [N: batch size, D: embedding dimensions, L: sequence length]
         # no bias to avoid accumulating biases on padding
-        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=True)
+        self.conv = nn.Conv2d(1, num_filters, kernel_size=(embed_size, filter_size), bias=False)
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -127,9 +127,10 @@ class NCNEncoder(nn.Module):
     Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
-    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
+    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
@@ -178,8 +179,8 @@ class NCNEncoder(nn.Module):
         ## Output:  
         
         - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-            If authors=True the output tensor contains the concatenated context and author encodings.
-            If authors=False the encoded context is returned.
+            If authors= True the output tensor contains the concatenated context and author encodings.
+            Else the encoded context is returned.
         """
         # Embed and encode context
         context = self.dropout(self.context_embedding(context))
@@ -207,13 +208,13 @@ class NCNEncoder(nn.Module):
 
 class Attention(nn.Module):
     """
-    Bahdanau-attention module as published in the paper https://arxiv.org/abs/1409.0473.
+    Bahndanau attention module as published in the paper https://arxiv.org/abs/1409.0473.
     The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
     - **enc_num_filters** *(int)*: Number of filters used in the encoder.  
-    - **dec_hid_dim** *(int)*: Dimensions of the top GRU layer hidden state.   
+    - **dec_hid_dim** *(int)*: Dimensions of the decoder RNN layer hidden state.   
     """
     def __init__(self, enc_num_filters: int , dec_hid_dim: int):
         super().__init__()
@@ -269,16 +270,15 @@ class Decoder(nn.Module):
     - **hidden_size** *(int)*: Specifies the dimensions of the hidden GRU layer state.  
     - **pad_idx** *(int)*: Index used for pad tokens. Will be ignored by the embedding layer.  
     - **dropout_p** *(float)*: Dropout probability.  
-    - **num_layers** *(int)*: Number of GRU layers.  
+    - **num_layers** *(float)*: Number of GRU layers.  
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
-    - **show_attention** *(bool)*: If true, the attention weights are returned by the decoder with the outputs.
+    - **show_attention** *(bool)*: If True, the decoder also returns the attention weight matrix.  
     """
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
                  pad_idx: int, dropout_p: float, num_layers: int,
                  attention: nn.Module, show_attention: bool):
         super().__init__()
 
-        self.rnn_type = rnn_type
         self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
@@ -298,8 +298,9 @@ class Decoder(nn.Module):
         
         self.dropout = nn.Dropout(dropout_p)
     
+    
     def init_hidden(self, bs: int):
-        """Initializes the GRU hidden state to a tensor of zeros of appropriate size."""
+        """Initializes the RNN hidden state to a tensor of zeros of appropriate size."""
         return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -> Tuple[Tensor, ...]:
@@ -315,7 +316,6 @@ class Decoder(nn.Module):
         
         - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
         - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
-        - **a** *(batch size, # TDNN encoders, hidden_dim): Attention weights for the input encodings.  
         """
         
         input = title.unsqueeze(0)
@@ -325,7 +325,7 @@ class Decoder(nn.Module):
         
         embedded = self.dropout(self.embedding(input))
         logger.debug(f"Embedded shape: {embedded.shape}")
-        
+         
         a = self.attention(hidden, encoder_outputs)
         a = a.unsqueeze(1)
         logger.debug(f"Attention output shape: {a.shape}")
@@ -337,7 +337,7 @@ class Decoder(nn.Module):
         logger.debug(f"Weighted shape: {weighted.shape}")
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
-        logger.debug(f"RNN input shape: {rnn_input.shape}")
+        logger.debug(f"RNN input shape: {rnn_input.shape}")  
         output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
@@ -350,9 +350,10 @@ class Decoder(nn.Module):
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
         
         if self.show_attention:
-            return output, hidden_size, a.squeeze(1)
+            return output, hidden, a.squeeze(1)
 
         return output, hidden
+
 
 
 class NeuralCitationNetwork(nn.Module):
@@ -518,4 +519,3 @@ class NeuralCitationNetwork(nn.Module):
             return outputs, attentions
         
         return outputs
-

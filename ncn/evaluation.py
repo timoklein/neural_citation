@@ -19,20 +19,23 @@ from ncn.model import NeuralCitationNetwork
 logger = logging.getLogger(__name__)
 
 
-# TODO: Document this
 class Evaluator:
     """
     Evaluator class for the neural citation network. Uses a trained NCN model and BM-25 to perform
     evaluation tasks on the test set or inference on the full dataset. 
     
     ## Parameters:  
-    
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
     - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
         Also holds initialized context, title and author fields.  
     - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
         If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode).   
+        If False, the corpus is built from the complete dataset (inference mode). 
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
     """
     def __init__(self, context_filters: Filters, author_filters: Filters,
                  num_filters: int, embed_size:int,
@@ -52,10 +55,10 @@ class Evaluator:
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=2,
+                                            num_layers=1,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
-                                            show_attention=True)
+                                            show_attention=show_attention)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
@@ -88,6 +91,17 @@ class Evaluator:
 
     @staticmethod
     def _get_context_title_indices(examples: List) -> Dict[Tuple[str, ...], List[str]]:
+        """
+        Extracts the matching cited title indices for a given context and returns the mapping in a dictionary.  
+        
+        ## Parameters:  
+        
+        - **examples** *(List)*: List of torchtext example objects.   
+        
+        ## Output:  
+        
+        - **mapping** *(Dictionary)*: Dictionary containg a mapping from context to the corresponding title indices.  
+        """
         mapping = {}
         for i, example in enumerate(examples):
             key = tuple(example.context)
@@ -113,7 +127,7 @@ class Evaluator:
 
         ## Output:  
         
-        - **indices** *(List[int])*: List of corpus indices with the highest similary rating to the query.   
+        - **titles** *(List)*: List of Lists containing the tokenized top titles given a query.   
         """
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
@@ -132,22 +146,22 @@ class Evaluator:
                 return [title for score, title in scores if score > 0]
 
 
-    def recall(self, x: int) -> Union[float, List[float]]:
+    def recall(self, x: int) -> float:
         """
         Computes recall @x metric on the test set for model evaluation purposes.  
         
         ## Parameters:  
-        * *(shapes)
         - **x** *(int)*: Specifies at which level the recall is computed.  
         
         ## Output:  
         
-        - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
+        - **recall** *(float)*: Float or list of floats with recall @x value.    
         """
         if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
         
         recall_list = []
         with torch.no_grad():
+            # set to the first 20k due to high computation time
             for example in tqdm_notebook(self.data.test[:20000]):
                 # numericalize query
                 context = self.context.numericalize([example.context])
@@ -156,9 +170,9 @@ class Evaluator:
                 citing = citing.to(DEVICE)
 
                 # catch contexts and citings shorter than filter lengths and pad manually
-                if context.shape[1] < 5:
+                if context.shape[1] < 7:
                     assert self.pad == 1, "Padding index doesn't match tensor index!"
-                    padded = torch.ones((1,5), dtype=torch.long)
+                    padded = torch.ones((1,7), dtype=torch.long)
                     padded[:, :context.shape[1]] = context
                     context = padded.to(DEVICE)
                 if citing.shape[1] < 2:
@@ -231,6 +245,22 @@ class Evaluator:
             return sum(recall_list) / len(self.data.test[:20000])
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
+        """
+        Generates citation recommendations for a query using the complete dataset.  
+        
+        ## Parameters:  
+        
+        - **query* *(Stringlike)*:  Citation context.  
+        - **citing* *(Stringlike)*:  Citing authors.  
+        - **top_x* *(int=5)*:  Number of citations to generate.  
+        
+        
+        ## Output:  
+        
+        - **recommendations** *(Dictionary)*:  Dictionary containing the ranks of the recommendations and the 
+            full recommended title.  
+        - **attentions** *(Tensor)*: Torch tensor containing the attention weights.  
+        """
         if self.eval: warnings.warn("Performing inference only on the test set.", RuntimeWarning)
         
         if isinstance(query, str): 

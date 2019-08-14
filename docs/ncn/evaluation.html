@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.2" />
+<meta name="generator" content="pdoc 0.6.3" />
 <title>ncn.evaluation API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 </head>
@@ -40,8 +40,7 @@ import ncn.core
 from ncn.core import BaseData, Stringlike, PathOrStr, DEVICE, Filters
 from ncn.model import NeuralCitationNetwork
 
-logger = logging.getLogger(&#34;neural_citation.evaluation&#34;)
-
+logger = logging.getLogger(__name__)
 
 
 class Evaluator:
@@ -50,13 +49,17 @@ class Evaluator:
     evaluation tasks on the test set or inference on the full dataset. 
     
     ## Parameters:  
-    
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
     - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
         Also holds initialized context, title and author fields.  
     - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
         If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode).   
+        If False, the corpus is built from the complete dataset (inference mode). 
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
     &#34;&#34;&#34;
     def __init__(self, context_filters: Filters, author_filters: Filters,
                  num_filters: int, embed_size:int,
@@ -76,10 +79,10 @@ class Evaluator:
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=2,
+                                            num_layers=1,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
-                                            show_attention=True)
+                                            show_attention=show_attention)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
@@ -112,6 +115,17 @@ class Evaluator:
 
     @staticmethod
     def _get_context_title_indices(examples: List) -&gt; Dict[Tuple[str, ...], List[str]]:
+        &#34;&#34;&#34;
+        Extracts the matching cited title indices for a given context and returns the mapping in a dictionary.  
+        
+        ## Parameters:  
+        
+        - **examples** *(List)*: List of torchtext example objects.   
+        
+        ## Output:  
+        
+        - **mapping** *(Dictionary)*: Dictionary containg a mapping from context to the corresponding title indices.  
+        &#34;&#34;&#34;
         mapping = {}
         for i, example in enumerate(examples):
             key = tuple(example.context)
@@ -137,7 +151,7 @@ class Evaluator:
 
         ## Output:  
         
-        - **indices** *(List[int])*: List of corpus indices with the highest similary rating to the query.   
+        - **titles** *(List)*: List of Lists containing the tokenized top titles given a query.   
         &#34;&#34;&#34;
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
@@ -156,22 +170,22 @@ class Evaluator:
                 return [title for score, title in scores if score &gt; 0]
 
 
-    def recall(self, x: int) -&gt; Union[float, List[float]]:
+    def recall(self, x: int) -&gt; float:
         &#34;&#34;&#34;
         Computes recall @x metric on the test set for model evaluation purposes.  
         
         ## Parameters:  
-        * *(shapes)
         - **x** *(int)*: Specifies at which level the recall is computed.  
         
         ## Output:  
         
-        - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
+        - **recall** *(float)*: Float or list of floats with recall @x value.    
         &#34;&#34;&#34;
         if not self.eval: warnings.warn(&#34;Performing evaluation on all data. This hurts performance.&#34;, RuntimeWarning)
         
         recall_list = []
         with torch.no_grad():
+            # set to the first 20k due to high computation time
             for example in tqdm_notebook(self.data.test[:20000]):
                 # numericalize query
                 context = self.context.numericalize([example.context])
@@ -180,9 +194,9 @@ class Evaluator:
                 citing = citing.to(DEVICE)
 
                 # catch contexts and citings shorter than filter lengths and pad manually
-                if context.shape[1] &lt; 5:
+                if context.shape[1] &lt; 7:
                     assert self.pad == 1, &#34;Padding index doesn&#39;t match tensor index!&#34;
-                    padded = torch.ones((1,5), dtype=torch.long)
+                    padded = torch.ones((1,7), dtype=torch.long)
                     padded[:, :context.shape[1]] = context
                     context = padded.to(DEVICE)
                 if citing.shape[1] &lt; 2:
@@ -255,6 +269,22 @@ class Evaluator:
             return sum(recall_list) / len(self.data.test[:20000])
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
+        &#34;&#34;&#34;
+        Generates citation recommendations for a query using the complete dataset.  
+        
+        ## Parameters:  
+        
+        - **query* *(Stringlike)*:  Citation context.  
+        - **citing* *(Stringlike)*:  Citing authors.  
+        - **top_x* *(int=5)*:  Number of citations to generate.  
+        
+        
+        ## Output:  
+        
+        - **recommendations** *(Dictionary)*:  Dictionary containing the ranks of the recommendations and the 
+            full recommended title.  
+        - **attentions** *(Tensor)*: Torch tensor containing the attention weights.  
+        &#34;&#34;&#34;
         if self.eval: warnings.warn(&#34;Performing inference only on the test set.&#34;, RuntimeWarning)
         
         if isinstance(query, str): 
@@ -332,13 +362,20 @@ class Evaluator:
 evaluation tasks on the test set or inference on the full dataset. </p>
 <h2 id="parameters">Parameters:</h2>
 <ul>
+<li><strong>context_filters</strong> <em>(Filters)</em>: List of ints representing the context filter lengths.
+</li>
+<li><strong>author_filters</strong> <em>(Filters)</em>: List of ints representing the author filter lengths. </li>
+<li><strong>num_filters</strong> <em>(int)</em>: Number of filters applied in the TDNN layers of the model.
+</li>
+<li><strong>embed_size</strong> <em>(int)</em>: Dimension of the learned author, context and title embeddings.</li>
 <li><strong>path_to_weights</strong> <em>(PathOrStr)</em>: Path to the weights of a pretrained NCN model. </li>
 <li><strong>data</strong> <em>(BaseData)</em>: BaseData container holding train, valid, and test data.
 Also holds initialized context, title and author fields.
 </li>
 <li><strong>evaluate</strong> <em>(bool=True)</em>: Determines the size of the BM-25 corpus used.
 If True, only the test samples will be used (model evaluation mode).
-If False, the corpus is built from the complete dataset (inference mode).</li>
+If False, the corpus is built from the complete dataset (inference mode). </li>
+<li><strong>show_attention</strong> <em>(bool=false)</em>: Returns attention tensors if true.</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
@@ -348,13 +385,17 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
     evaluation tasks on the test set or inference on the full dataset. 
     
     ## Parameters:  
-    
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
     - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
         Also holds initialized context, title and author fields.  
     - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
         If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode).   
+        If False, the corpus is built from the complete dataset (inference mode). 
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
     &#34;&#34;&#34;
     def __init__(self, context_filters: Filters, author_filters: Filters,
                  num_filters: int, embed_size:int,
@@ -374,10 +415,10 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=2,
+                                            num_layers=1,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
-                                            show_attention=True)
+                                            show_attention=show_attention)
         self.model.to(DEVICE)
         self.model.load_state_dict(torch.load(path_to_weights, map_location=DEVICE))
         self.model.eval()
@@ -410,6 +451,17 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
 
     @staticmethod
     def _get_context_title_indices(examples: List) -&gt; Dict[Tuple[str, ...], List[str]]:
+        &#34;&#34;&#34;
+        Extracts the matching cited title indices for a given context and returns the mapping in a dictionary.  
+        
+        ## Parameters:  
+        
+        - **examples** *(List)*: List of torchtext example objects.   
+        
+        ## Output:  
+        
+        - **mapping** *(Dictionary)*: Dictionary containg a mapping from context to the corresponding title indices.  
+        &#34;&#34;&#34;
         mapping = {}
         for i, example in enumerate(examples):
             key = tuple(example.context)
@@ -435,7 +487,7 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
 
         ## Output:  
         
-        - **indices** *(List[int])*: List of corpus indices with the highest similary rating to the query.   
+        - **titles** *(List)*: List of Lists containing the tokenized top titles given a query.   
         &#34;&#34;&#34;
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
@@ -454,22 +506,22 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
                 return [title for score, title in scores if score &gt; 0]
 
 
-    def recall(self, x: int) -&gt; Union[float, List[float]]:
+    def recall(self, x: int) -&gt; float:
         &#34;&#34;&#34;
         Computes recall @x metric on the test set for model evaluation purposes.  
         
         ## Parameters:  
-        * *(shapes)
         - **x** *(int)*: Specifies at which level the recall is computed.  
         
         ## Output:  
         
-        - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
+        - **recall** *(float)*: Float or list of floats with recall @x value.    
         &#34;&#34;&#34;
         if not self.eval: warnings.warn(&#34;Performing evaluation on all data. This hurts performance.&#34;, RuntimeWarning)
         
         recall_list = []
         with torch.no_grad():
+            # set to the first 20k due to high computation time
             for example in tqdm_notebook(self.data.test[:20000]):
                 # numericalize query
                 context = self.context.numericalize([example.context])
@@ -478,9 +530,9 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
                 citing = citing.to(DEVICE)
 
                 # catch contexts and citings shorter than filter lengths and pad manually
-                if context.shape[1] &lt; 5:
+                if context.shape[1] &lt; 7:
                     assert self.pad == 1, &#34;Padding index doesn&#39;t match tensor index!&#34;
-                    padded = torch.ones((1,5), dtype=torch.long)
+                    padded = torch.ones((1,7), dtype=torch.long)
                     padded[:, :context.shape[1]] = context
                     context = padded.to(DEVICE)
                 if citing.shape[1] &lt; 2:
@@ -553,6 +605,22 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
             return sum(recall_list) / len(self.data.test[:20000])
         
     def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
+        &#34;&#34;&#34;
+        Generates citation recommendations for a query using the complete dataset.  
+        
+        ## Parameters:  
+        
+        - **query* *(Stringlike)*:  Citation context.  
+        - **citing* *(Stringlike)*:  Citing authors.  
+        - **top_x* *(int=5)*:  Number of citations to generate.  
+        
+        
+        ## Output:  
+        
+        - **recommendations** *(Dictionary)*:  Dictionary containing the ranks of the recommendations and the 
+            full recommended title.  
+        - **attentions** *(Tensor)*: Torch tensor containing the attention weights.  
+        &#34;&#34;&#34;
         if self.eval: warnings.warn(&#34;Performing inference only on the test set.&#34;, RuntimeWarning)
         
         if isinstance(query, str): 
@@ -612,39 +680,38 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
 <h3>Methods</h3>
 <dl>
 <dt id="ncn.evaluation.Evaluator.recall"><code class="name flex">
-<span>def <span class="ident">recall</span></span>(<span>self, x: int) -> Union[float, List[float]]</span>
+<span>def <span class="ident">recall</span></span>(<span>self, x: int) -> float</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Computes recall @x metric on the test set for model evaluation purposes.
 </p>
 <h2 id="parameters">Parameters:</h2>
 <ul>
-<li>*(shapes)</li>
 <li><strong>x</strong> <em>(int)</em>: Specifies at which level the recall is computed.
 </li>
 </ul>
 <h2 id="output">Output:</h2>
 <ul>
-<li><strong>recall</strong> <em>(Union[float, List[float]])</em>: Float or list of floats with recall @x value.</li>
+<li><strong>recall</strong> <em>(float)</em>: Float or list of floats with recall @x value.</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def recall(self, x: int) -&gt; Union[float, List[float]]:
+<pre><code class="python">def recall(self, x: int) -&gt; float:
     &#34;&#34;&#34;
     Computes recall @x metric on the test set for model evaluation purposes.  
     
     ## Parameters:  
-    * *(shapes)
     - **x** *(int)*: Specifies at which level the recall is computed.  
     
     ## Output:  
     
-    - **recall** *(Union[float, List[float]])*: Float or list of floats with recall @x value.    
+    - **recall** *(float)*: Float or list of floats with recall @x value.    
     &#34;&#34;&#34;
     if not self.eval: warnings.warn(&#34;Performing evaluation on all data. This hurts performance.&#34;, RuntimeWarning)
     
     recall_list = []
     with torch.no_grad():
+        # set to the first 20k due to high computation time
         for example in tqdm_notebook(self.data.test[:20000]):
             # numericalize query
             context = self.context.numericalize([example.context])
@@ -653,9 +720,9 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
             citing = citing.to(DEVICE)
 
             # catch contexts and citings shorter than filter lengths and pad manually
-            if context.shape[1] &lt; 5:
+            if context.shape[1] &lt; 7:
                 assert self.pad == 1, &#34;Padding index doesn&#39;t match tensor index!&#34;
-                padded = torch.ones((1,5), dtype=torch.long)
+                padded = torch.ones((1,7), dtype=torch.long)
                 padded[:, :context.shape[1]] = context
                 context = padded.to(DEVICE)
             if citing.shape[1] &lt; 2:
@@ -732,10 +799,47 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
 <span>def <span class="ident">recommend</span></span>(<span>self, query: Union[str, List[str]], citing: Union[str, List[str]], top_x: int = 5)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Generates citation recommendations for a query using the complete dataset.
+</p>
+<h2 id="parameters">Parameters:</h2>
+<ul>
+<li><em><em>query</em> </em>(Stringlike)*:
+Citation context.
+</li>
+<li><em><em>citing</em> </em>(Stringlike)*:
+Citing authors.
+</li>
+<li><em><em>top_x</em> </em>(int=5)*:
+Number of citations to generate.
+</li>
+</ul>
+<h2 id="output">Output:</h2>
+<ul>
+<li><strong>recommendations</strong> <em>(Dictionary)</em>:
+Dictionary containing the ranks of the recommendations and the
+full recommended title.
+</li>
+<li><strong>attentions</strong> <em>(Tensor)</em>: Torch tensor containing the attention weights.</li>
+</ul></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def recommend(self, query: Stringlike, citing: Stringlike, top_x: int = 5):
+    &#34;&#34;&#34;
+    Generates citation recommendations for a query using the complete dataset.  
+    
+    ## Parameters:  
+    
+    - **query* *(Stringlike)*:  Citation context.  
+    - **citing* *(Stringlike)*:  Citing authors.  
+    - **top_x* *(int=5)*:  Number of citations to generate.  
+    
+    
+    ## Output:  
+    
+    - **recommendations** *(Dictionary)*:  Dictionary containing the ranks of the recommendations and the 
+        full recommended title.  
+    - **attentions** *(Tensor)*: Torch tensor containing the attention weights.  
+    &#34;&#34;&#34;
     if self.eval: warnings.warn(&#34;Performing inference only on the test set.&#34;, RuntimeWarning)
     
     if isinstance(query, str): 
@@ -824,7 +928,7 @@ If False, the corpus is built from the complete dataset (inference mode).</li>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

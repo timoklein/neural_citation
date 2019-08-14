@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.2" />
+<meta name="generator" content="pdoc 0.6.3" />
 <title>ncn.model API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 </head>
@@ -48,7 +48,7 @@ class TDNN(nn.Module):
 
     - **filter_size** *(int)*: filter length for the convolutional operation  
     - **embed_size** *(int)*: Dimension of the input word embeddings  
-    - **num_filters** *(int=64)*: Number of convolutional filters  
+    - **num_filters** *(int)*: Number of convolutional filters  
     &#34;&#34;&#34;
 
     def __init__(self, filter_size: int, 
@@ -232,7 +232,7 @@ class NCNEncoder(nn.Module):
 
 class Attention(nn.Module):
     &#34;&#34;&#34;
-    Base attention module as published in the paper https://arxiv.org/abs/1409.0473.
+    Bahndanau attention module as published in the paper https://arxiv.org/abs/1409.0473.
     The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
@@ -269,7 +269,8 @@ class Attention(nn.Module):
         logger.debug(f&#34;Attention Batch size: {batch_size}&#34;)
         logger.debug(f&#34;Attention weights: {src_len}&#34;)
         
-        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+        # Use only the last hidden state in case of multiple layers, i.e. hidden[-1]
+        hidden = hidden[-1].unsqueeze(1).repeat(1, src_len, 1)
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
         energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
         
@@ -278,7 +279,6 @@ class Attention(nn.Module):
         attention = torch.bmm(v, energy).squeeze(1)
         
         return torch.softmax(attention, dim=1)
-
 
 
 class Decoder(nn.Module):
@@ -294,12 +294,16 @@ class Decoder(nn.Module):
     - **hidden_size** *(int)*: Specifies the dimensions of the hidden GRU layer state.  
     - **pad_idx** *(int)*: Index used for pad tokens. Will be ignored by the embedding layer.  
     - **dropout_p** *(float)*: Dropout probability.  
+    - **num_layers** *(float)*: Number of GRU layers.  
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
+    - **show_attention** *(bool)*: If True, the decoder also returns the attention weight matrix.  
     &#34;&#34;&#34;
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, attention: nn.Module, show_attention: bool):
+                 pad_idx: int, dropout_p: float, num_layers: int,
+                 attention: nn.Module, show_attention: bool):
         super().__init__()
 
+        self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
         self.hidden_size = hidden_size
@@ -309,8 +313,10 @@ class Decoder(nn.Module):
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        
-        self.rnn = nn.GRU(enc_num_filters + embed_size, hidden_size)
+        self.rnn = nn.GRU(input_size=enc_num_filters + embed_size,
+                          hidden_size=hidden_size,
+                          num_layers=num_layers,
+                          dropout=self.dropout_p)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
@@ -318,22 +324,22 @@ class Decoder(nn.Module):
     
     
     def init_hidden(self, bs: int):
-        &#34;&#34;&#34;Initializes the GRU hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
-        return torch.zeros(bs, self.hidden_size, device=DEVICE)
+        &#34;&#34;&#34;Initializes the RNN hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
+        return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -&gt; Tuple[Tensor, ...]:
         &#34;&#34;&#34;
         ## Input:  
         
         - **title** *(batch size)*: Batch of initial title tokens.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
             Encoded context and author information. 
         
         ## Output:  
         
         - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         &#34;&#34;&#34;
         
         input = title.unsqueeze(0)
@@ -356,10 +362,7 @@ class Decoder(nn.Module):
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
         logger.debug(f&#34;RNN input shape: {rnn_input.shape}&#34;)  
-        output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
-        
-        # sanity check
-        assert (output == hidden).all()
+        output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
         output = output.squeeze(0)
@@ -371,9 +374,9 @@ class Decoder(nn.Module):
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
         
         if self.show_attention:
-            return output, hidden.squeeze(0), a.squeeze(1)
+            return output, hidden, a.squeeze(1)
 
-        return output, hidden.squeeze(0)
+        return output, hidden
 
 
 
@@ -386,17 +389,17 @@ class NeuralCitationNetwork(nn.Module):
     https://github.com/tebesu/NeuralCitationNetwork.  
 
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
     - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
-    - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
-    - **authors** *(bool=True)*: Use author information in the encoder.  
-    - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
-    - **num_layers** *(int=2)*: Number of GRU layers.  
-    - **hidden_size** *(int=128)*: Dimension of the GRU hidden states.  
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **authors** *(bool)*: Use author information in the encoder.  
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of recurrent layers.  
+    - **hidden_size** *(int)*: Dimension of the recurrent unit hidden states.  
     - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
     - **show_attention** *(bool=false)*: Returns attention tensors if true.  
     &#34;&#34;&#34;
@@ -406,11 +409,11 @@ class NeuralCitationNetwork(nn.Module):
                        title_vocab_size: int,
                        author_vocab_size: int,
                        pad_idx: int,
-                       num_filters: int = 128,
-                       authors: bool = True, 
-                       embed_size: int = 128,
-                       num_layers: int = 2,
-                       hidden_size: int = 128,
+                       num_filters: int,
+                       authors: bool, 
+                       embed_size: int,
+                       num_layers: int, 
+                       hidden_size: int,
                        dropout_p: float = 0.2,
                        show_attention: bool = False):
         super().__init__()
@@ -432,11 +435,6 @@ class NeuralCitationNetwork(nn.Module):
 
         self.dropout_p = dropout_p
         self.show_attention = show_attention
-
-        # sanity check
-        msg = (f&#34;# Filters={self.num_filters}, Hidden dimension={self.hidden_size}, Embedding dimension={self.embed_size}&#34;
-               f&#34;\nThese don&#39;t match!&#34;)
-        assert self.num_filters == self.hidden_size == self.embed_size, msg
 
         #---------------------------------------------------------------------------------------------------------------
         # NCN MODEL
@@ -460,6 +458,7 @@ class NeuralCitationNetwork(nn.Module):
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
+                               num_layers = self.num_layers,
                                attention = self.attention,
                                show_attention=self.show_attention)
         
@@ -560,7 +559,7 @@ class NeuralCitationNetwork(nn.Module):
 <span>(</span><span>enc_num_filters: int, dec_hid_dim: int)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Base attention module as published in the paper <a href="https://arxiv.org/abs/1409.0473.">https://arxiv.org/abs/1409.0473.</a>
+<section class="desc"><p>Bahndanau attention module as published in the paper <a href="https://arxiv.org/abs/1409.0473.">https://arxiv.org/abs/1409.0473.</a>
 The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">https://github.com/bentrevett/pytorch-seq2seq.</a>
 </p>
 <h2 id="parameters">Parameters:</h2>
@@ -573,7 +572,7 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
 <summary>Source code</summary>
 <pre><code class="python">class Attention(nn.Module):
     &#34;&#34;&#34;
-    Base attention module as published in the paper https://arxiv.org/abs/1409.0473.
+    Bahndanau attention module as published in the paper https://arxiv.org/abs/1409.0473.
     The code is based on https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
@@ -610,7 +609,8 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
         logger.debug(f&#34;Attention Batch size: {batch_size}&#34;)
         logger.debug(f&#34;Attention weights: {src_len}&#34;)
         
-        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+        # Use only the last hidden state in case of multiple layers, i.e. hidden[-1]
+        hidden = hidden[-1].unsqueeze(1).repeat(1, src_len, 1)
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
         energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
         
@@ -665,7 +665,8 @@ Tensor containing the attention weights for the encoded source data.</li>
     logger.debug(f&#34;Attention Batch size: {batch_size}&#34;)
     logger.debug(f&#34;Attention weights: {src_len}&#34;)
     
-    hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+    # Use only the last hidden state in case of multiple layers, i.e. hidden[-1]
+    hidden = hidden[-1].unsqueeze(1).repeat(1, src_len, 1)
     encoder_outputs = encoder_outputs.permute(1, 0, 2)
     energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim = 2))) 
     
@@ -680,7 +681,7 @@ Tensor containing the attention weights for the encoded source data.</li>
 </dd>
 <dt id="ncn.model.Decoder"><code class="flex name class">
 <span>class <span class="ident">Decoder</span></span>
-<span>(</span><span>title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int, pad_idx: int, dropout_p: float, attention: torch.nn.modules.module.Module, show_attention: bool)</span>
+<span>(</span><span>title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int, pad_idx: int, dropout_p: float, num_layers: int, attention: torch.nn.modules.module.Module, show_attention: bool)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Attention decoder for a Seq2Seq model. Uses a GRU layer as recurrent unit.<br>
@@ -700,7 +701,11 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
 </li>
 <li><strong>dropout_p</strong> <em>(float)</em>: Dropout probability.
 </li>
-<li><strong>attention</strong> <em>(nn.Module)</em>: Module for computing the attention weights.</li>
+<li><strong>num_layers</strong> <em>(float)</em>: Number of GRU layers.
+</li>
+<li><strong>attention</strong> <em>(nn.Module)</em>: Module for computing the attention weights.
+</li>
+<li><strong>show_attention</strong> <em>(bool)</em>: If True, the decoder also returns the attention weight matrix.</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
@@ -717,12 +722,16 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
     - **hidden_size** *(int)*: Specifies the dimensions of the hidden GRU layer state.  
     - **pad_idx** *(int)*: Index used for pad tokens. Will be ignored by the embedding layer.  
     - **dropout_p** *(float)*: Dropout probability.  
+    - **num_layers** *(float)*: Number of GRU layers.  
     - **attention** *(nn.Module)*: Module for computing the attention weights.  
+    - **show_attention** *(bool)*: If True, the decoder also returns the attention weight matrix.  
     &#34;&#34;&#34;
     def __init__(self, title_vocab_size: int, embed_size: int, enc_num_filters: int, hidden_size: int,
-                 pad_idx: int, dropout_p: float, attention: nn.Module, show_attention: bool):
+                 pad_idx: int, dropout_p: float, num_layers: int,
+                 attention: nn.Module, show_attention: bool):
         super().__init__()
 
+        self.num_layers = num_layers
         self.embed_size = embed_size
         self.enc_num_filtes = enc_num_filters
         self.hidden_size = hidden_size
@@ -732,8 +741,10 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
         self.show_attention = show_attention
         
         self.embedding = nn.Embedding(title_vocab_size, embed_size, padding_idx=pad_idx)
-        
-        self.rnn = nn.GRU(enc_num_filters + embed_size, hidden_size)
+        self.rnn = nn.GRU(input_size=enc_num_filters + embed_size,
+                          hidden_size=hidden_size,
+                          num_layers=num_layers,
+                          dropout=self.dropout_p)
         
         self.out = nn.Linear(enc_num_filters*2 + embed_size, title_vocab_size)
         
@@ -741,22 +752,22 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
     
     
     def init_hidden(self, bs: int):
-        &#34;&#34;&#34;Initializes the GRU hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
-        return torch.zeros(bs, self.hidden_size, device=DEVICE)
+        &#34;&#34;&#34;Initializes the RNN hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
+        return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)
     
     def forward(self, title: Tensor, hidden: Tensor, encoder_outputs: Tensor) -&gt; Tuple[Tensor, ...]:
         &#34;&#34;&#34;
         ## Input:  
         
         - **title** *(batch size)*: Batch of initial title tokens.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
             Encoded context and author information. 
         
         ## Output:  
         
         - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
-        - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+        - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
         &#34;&#34;&#34;
         
         input = title.unsqueeze(0)
@@ -779,10 +790,7 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
         
         rnn_input = torch.cat((embedded, weighted), dim = 2)
         logger.debug(f&#34;RNN input shape: {rnn_input.shape}&#34;)  
-        output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
-        
-        # sanity check
-        assert (output == hidden).all()
+        output, hidden = self.rnn(rnn_input, hidden)
         
         embedded = embedded.squeeze(0)
         output = output.squeeze(0)
@@ -794,9 +802,9 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
         output = self.out(torch.cat((output, weighted, embedded), dim = 1))
         
         if self.show_attention:
-            return output, hidden.squeeze(0), a.squeeze(1)
+            return output, hidden, a.squeeze(1)
 
-        return output, hidden.squeeze(0)</code></pre>
+        return output, hidden</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -812,7 +820,7 @@ The code is based on <a href="https://github.com/bentrevett/pytorch-seq2seq.">ht
 <ul>
 <li><strong>title</strong> <em>(batch size)</em>: Batch of initial title tokens.
 </li>
-<li><strong>hidden</strong> *(batch size, hidden_dim): Hidden state of the GRU unit.
+<li><strong>hidden</strong> *(batch size, hidden_dim): Hidden state of the recurrent unit.
 </li>
 <li><strong>encoder_otuputs</strong> <em>(number of filter sizes, batch size, # filters)</em>:
 Encoded context and author information. </li>
@@ -821,7 +829,7 @@ Encoded context and author information. </li>
 <ul>
 <li><strong>output</strong> <em>(batch size, vocab_size)</em>: Scores for each word in the vocab.
 </li>
-<li><strong>hidden</strong> *(batch size, hidden_dim): Hidden state of the GRU unit.</li>
+<li><strong>hidden</strong> *(batch size, hidden_dim): Hidden state of the recurrent unit.</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
@@ -830,14 +838,14 @@ Encoded context and author information. </li>
     ## Input:  
     
     - **title** *(batch size)*: Batch of initial title tokens.  
-    - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+    - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
     - **encoder_otuputs** *(number of filter sizes, batch size, # filters)*: 
         Encoded context and author information. 
     
     ## Output:  
     
     - **output** *(batch size, vocab_size)*: Scores for each word in the vocab.  
-    - **hidden** *(batch size, hidden_dim): Hidden state of the GRU unit.  
+    - **hidden** *(batch size, hidden_dim): Hidden state of the recurrent unit.  
     &#34;&#34;&#34;
     
     input = title.unsqueeze(0)
@@ -860,10 +868,7 @@ Encoded context and author information. </li>
     
     rnn_input = torch.cat((embedded, weighted), dim = 2)
     logger.debug(f&#34;RNN input shape: {rnn_input.shape}&#34;)  
-    output, hidden = self.rnn(rnn_input, hidden.unsqueeze(0))
-    
-    # sanity check
-    assert (output == hidden).all()
+    output, hidden = self.rnn(rnn_input, hidden)
     
     embedded = embedded.squeeze(0)
     output = output.squeeze(0)
@@ -875,21 +880,21 @@ Encoded context and author information. </li>
     output = self.out(torch.cat((output, weighted, embedded), dim = 1))
     
     if self.show_attention:
-        return output, hidden.squeeze(0), a.squeeze(1)
+        return output, hidden, a.squeeze(1)
 
-    return output, hidden.squeeze(0)</code></pre>
+    return output, hidden</code></pre>
 </details>
 </dd>
 <dt id="ncn.model.Decoder.init_hidden"><code class="name flex">
 <span>def <span class="ident">init_hidden</span></span>(<span>self, bs: int)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Initializes the GRU hidden state to a tensor of zeros of appropriate size.</p></section>
+<section class="desc"><p>Initializes the RNN hidden state to a tensor of zeros of appropriate size.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def init_hidden(self, bs: int):
-    &#34;&#34;&#34;Initializes the GRU hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
-    return torch.zeros(bs, self.hidden_size, device=DEVICE)</code></pre>
+    &#34;&#34;&#34;Initializes the RNN hidden state to a tensor of zeros of appropriate size.&#34;&#34;&#34;
+    return torch.zeros(self.num_layers, bs, self.hidden_size, device=DEVICE)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1083,7 +1088,7 @@ Else the encoded context is returned.</li>
 </dd>
 <dt id="ncn.model.NeuralCitationNetwork"><code class="flex name class">
 <span>class <span class="ident">NeuralCitationNetwork</span></span>
-<span>(</span><span>context_filters: List[int], author_filters: List[int], context_vocab_size: int, title_vocab_size: int, author_vocab_size: int, pad_idx: int, num_filters: int = 128, authors: bool = True, embed_size: int = 128, num_layers: int = 2, hidden_size: int = 128, dropout_p: float = 0.2, show_attention: bool = False)</span>
+<span>(</span><span>context_filters: List[int], author_filters: List[int], context_vocab_size: int, title_vocab_size: int, author_vocab_size: int, pad_idx: int, num_filters: int, authors: bool, embed_size: int, num_layers: int, hidden_size: int, dropout_p: float = 0.2, show_attention: bool = False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>PyTorch implementation of the neural citation network by Ebesu &amp; Fang.<br>
@@ -1094,9 +1099,9 @@ The author's tensorflow code is on github:<br>
 </p>
 <h2 id="parameters">Parameters:</h2>
 <ul>
-<li><strong>context_filters</strong> <em>(int)</em>: List of ints representing the context filter lengths.
+<li><strong>context_filters</strong> <em>(Filters)</em>: List of ints representing the context filter lengths.
 </li>
-<li><strong>author_filters</strong> <em>(int)</em>: List of ints representing the author filter lengths.
+<li><strong>author_filters</strong> <em>(Filters)</em>: List of ints representing the author filter lengths.
 </li>
 <li><strong>context_vocab_size</strong> <em>(int)</em>: Size of the context vocabulary. Used to train context embeddings.
 </li>
@@ -1106,15 +1111,15 @@ The author's tensorflow code is on github:<br>
 </li>
 <li><strong>pad_idx</strong> <em>(int)</em>: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.
 </li>
-<li><strong>num_filters</strong> <em>(int=128)</em>: Number of filters applied in the TDNN layers of the model.
+<li><strong>num_filters</strong> <em>(int)</em>: Number of filters applied in the TDNN layers of the model.
 </li>
-<li><strong>authors</strong> <em>(bool=True)</em>: Use author information in the encoder.
+<li><strong>authors</strong> <em>(bool)</em>: Use author information in the encoder.
 </li>
-<li><strong>embed_size</strong> <em>(int=128)</em>: Dimension of the learned author, context and title embeddings.
+<li><strong>embed_size</strong> <em>(int)</em>: Dimension of the learned author, context and title embeddings.
 </li>
-<li><strong>num_layers</strong> <em>(int=2)</em>: Number of GRU layers.
+<li><strong>num_layers</strong> <em>(int)</em>: Number of recurrent layers.
 </li>
-<li><strong>hidden_size</strong> <em>(int=128)</em>: Dimension of the GRU hidden states.
+<li><strong>hidden_size</strong> <em>(int)</em>: Dimension of the recurrent unit hidden states.
 </li>
 <li><strong>dropout_p</strong> <em>(float=0.2)</em>: Dropout probability for the dropout regularization layers.
 </li>
@@ -1131,17 +1136,17 @@ The author's tensorflow code is on github:<br>
     https://github.com/tebesu/NeuralCitationNetwork.  
 
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
     - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **pad_idx** *(int)*: Index of the pad token in the vocabulary. Is set to zeros by the embedding layer.   
-    - **num_filters** *(int=128)*: Number of filters applied in the TDNN layers of the model.   
-    - **authors** *(bool=True)*: Use author information in the encoder.  
-    - **embed_size** *(int=128)*: Dimension of the learned author, context and title embeddings.  
-    - **num_layers** *(int=2)*: Number of GRU layers.  
-    - **hidden_size** *(int=128)*: Dimension of the GRU hidden states.  
+    - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
+    - **authors** *(bool)*: Use author information in the encoder.  
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of recurrent layers.  
+    - **hidden_size** *(int)*: Dimension of the recurrent unit hidden states.  
     - **dropout_p** *(float=0.2)*: Dropout probability for the dropout regularization layers.  
     - **show_attention** *(bool=false)*: Returns attention tensors if true.  
     &#34;&#34;&#34;
@@ -1151,11 +1156,11 @@ The author's tensorflow code is on github:<br>
                        title_vocab_size: int,
                        author_vocab_size: int,
                        pad_idx: int,
-                       num_filters: int = 128,
-                       authors: bool = True, 
-                       embed_size: int = 128,
-                       num_layers: int = 2,
-                       hidden_size: int = 128,
+                       num_filters: int,
+                       authors: bool, 
+                       embed_size: int,
+                       num_layers: int, 
+                       hidden_size: int,
                        dropout_p: float = 0.2,
                        show_attention: bool = False):
         super().__init__()
@@ -1177,11 +1182,6 @@ The author's tensorflow code is on github:<br>
 
         self.dropout_p = dropout_p
         self.show_attention = show_attention
-
-        # sanity check
-        msg = (f&#34;# Filters={self.num_filters}, Hidden dimension={self.hidden_size}, Embedding dimension={self.embed_size}&#34;
-               f&#34;\nThese don&#39;t match!&#34;)
-        assert self.num_filters == self.hidden_size == self.embed_size, msg
 
         #---------------------------------------------------------------------------------------------------------------
         # NCN MODEL
@@ -1205,6 +1205,7 @@ The author's tensorflow code is on github:<br>
                                hidden_size = self.hidden_size,
                                pad_idx = self.pad_idx,
                                dropout_p = self.dropout_p,
+                               num_layers = self.num_layers,
                                attention = self.attention,
                                show_attention=self.show_attention)
         
@@ -1423,7 +1424,7 @@ Consists of the following layers (in order): Convolution, ReLu, Batchnorm, MaxPo
 </li>
 <li><strong>embed_size</strong> <em>(int)</em>: Dimension of the input word embeddings
 </li>
-<li><strong>num_filters</strong> <em>(int=64)</em>: Number of convolutional filters</li>
+<li><strong>num_filters</strong> <em>(int)</em>: Number of convolutional filters</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
@@ -1438,7 +1439,7 @@ Consists of the following layers (in order): Convolution, ReLu, Batchnorm, MaxPo
 
     - **filter_size** *(int)*: filter length for the convolutional operation  
     - **embed_size** *(int)*: Dimension of the input word embeddings  
-    - **num_filters** *(int=64)*: Number of convolutional filters  
+    - **num_filters** *(int)*: Number of convolutional filters  
     &#34;&#34;&#34;
 
     def __init__(self, filter_size: int, 
@@ -1721,7 +1722,7 @@ Tensor containing the complete context/author encodings.</li>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

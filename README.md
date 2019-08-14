@@ -19,8 +19,13 @@ The neural_citation.yml file contains a list of packages used to implement this 
 * tqdm==4.32.2
 For training the model it is recommended to use the GPU version of Pytorch instead.
 
-## Getting started
-Project structure: 
+## Getting started  
+Install dependencies and clone the repo. The training notebook contains a training  template.
+The evaluation notebook shows an example of how model evaluations can be run.
+Note that both training and evaluation functions are optimized for use in notebooks as they use
+tqdm_notebook progress bars. When running these functions from a script this needs to be changed.  
+
+## Project structure: 
     
     .
     ├── assets  # experiments in the EACL paper
@@ -29,7 +34,8 @@ Project structure:
     │   └── title_tokenized_to_full # pickled dictionary: tokenized titles -> full cited paper titles
     │      
     ├── docs    # documentation for the ncn modules
-    │   └── xxx.html # doc html files
+    |    └── ncn # doc folder for the module
+    │       └── xxx.html # doc html files
     |
     ├── ncn    # main folder containing the NCN implementation
     │   ├── core # contains core data types and constants
@@ -53,7 +59,7 @@ Project structure:
 
 ## Data  
 The preprocessed dataset can be found here: https://www.dropbox.com/s/1481lpooa0wiu2u/arxiv_data.csv.zip?dl=0.  
-Statistics about the dataset can be found in the NCN_training.ipynb file.
+Statistics about the dataset can be found in the NCN_presentation.ipynb file.
 
 
 ## Weights

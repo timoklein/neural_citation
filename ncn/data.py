@@ -371,7 +371,7 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
 
     # split dataset
     train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
-    return BaseData(CNTXT, TTL, AUT, train, valid, test)
+    return BaseData(cntxt=CNTXT, ttl=TTL, aut=AUT, train=train, valid=valid, test=test)
 
 
 def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -> IteratorData:
