@@ -118,8 +118,8 @@ class Evaluator:
         The query can either be passed as string or a list of strings (tokenized string). 
         Returns the tokenized most similar corpus titles.
         Only titles with similarity values > 0 are returned.
-        A maximum number of 2048 titles is returned in eval mode. 
-        For recommendations, the top 256 titles are returned.  
+        A maximum number of 1028 titles is returned in eval mode. 
+        For recommendations, the top 256 titles are returned due to computational expense of the following scoring operation.  
 
         ## Parameters:  
     
@@ -127,7 +127,7 @@ class Evaluator:
 
         ## Output:  
         
-        - **titles** *(List)*: List of Lists containing the tokenized top titles given a query.   
+        - **titles** *(List[List[str]])*: List of Lists containing strings of the tokenized top titles given a query.   
         """
         # sort titles according to score and return indices
         scores = [(score, title) for score, title in zip(self.bm25.get_scores(query), self.corpus)]
@@ -157,7 +157,7 @@ class Evaluator:
         
         - **recall** *(float)*: Float or list of floats with recall @x value.    
         """
-        if not self.eval: warnings.warn("Performing evaluation on all data. This hurts performance.", RuntimeWarning)
+        if not self.eval: warnings.warn("Performing evaluation on all data.", RuntimeWarning)
         
         recall_list = []
         with torch.no_grad():

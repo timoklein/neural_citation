@@ -10,7 +10,7 @@ from torch import Tensor
 import ncn.core
 from ncn.core import Filters, DEVICE
 
-logger = logging.getLogger("neural_citation.ncn")
+logger = logging.getLogger(__name__)
 
 
 class TDNN(nn.Module):
@@ -121,16 +121,14 @@ class TDNNEncoder(nn.Module):
         return x.view(len(self.filter_list), -1, self.num_filters)
 
 
-
 class NCNEncoder(nn.Module):
     """
     Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
-    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
@@ -179,7 +177,7 @@ class NCNEncoder(nn.Module):
         ## Output:  
         
         - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-            If authors= True the output tensor contains the concatenated context and author encodings.
+            If authors=True the output tensor contains the concatenated context and author encodings.
             Else the encoded context is returned.
         """
         # Embed and encode context

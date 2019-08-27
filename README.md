@@ -16,7 +16,8 @@ The neural_citation.yml file contains a list of packages used to implement this 
 * gensim==3.8.0
 * nltk==3.4.4
 * pandas==0.25.0
-* tqdm==4.32.2
+* tqdm==4.32.2  
+
 For training the model it is recommended to use the GPU version of Pytorch instead.
 
 ## Getting started  

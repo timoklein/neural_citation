@@ -99,6 +99,7 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
     - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
     - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
     - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    - **textpath** *(Path)*:  Path to a paper&#39;s textfile.  
     
     ## Output:  
     
@@ -266,7 +267,11 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
+    - **STOPWORDS** *(Set)*:
+        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
+
     
     ## Output:  
     
@@ -578,6 +583,9 @@ Reference information corresponding to the contexts.
 <li><strong>meta</strong> <em>(Dict[str, str])</em>:
 Dictionary containing metadata of the citing paper.
 </li>
+<li><strong>textpath</strong> <em>(Path)</em>:
+Path to a paper's textfile.
+</li>
 </ul>
 <h2 id="output">Output:</h2>
 <ul>
@@ -598,6 +606,7 @@ Each sample has to have information for citation context, citing authors, cited 
     - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
     - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
     - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    - **textpath** *(Path)*:  Path to a paper&#39;s textfile.  
     
     ## Output:  
     
@@ -981,6 +990,11 @@ The resulting DataFrame is saved as Python pickle object in the parent directory
 </li>
 <li><strong>tokenizer</strong> <em>(spacy.tokenizer.Tokenizer)</em>: SpaCy tokenizer object used to split the string into tokens.
 </li>
+<li><strong>STOPWORDS</strong> <em>(Set)</em>:
+Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.
+</li>
+<li><strong>identifier</strong> <em>(str)</em>: A string determining whether a title or a context is passed as text.
+</li>
 </ul>
 <h2 id="output">Output:</h2>
 <ul>
@@ -1004,7 +1018,11 @@ List containing the preprocessed tokens.</li>
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
+    - **STOPWORDS** *(Set)*:
+        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
+
     
     ## Output:  
     

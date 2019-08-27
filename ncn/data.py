@@ -75,6 +75,7 @@ def generate_context_samples(contexts: Collection[str], refs: Collection[str],
     - **contexts** *(Collection[str])*:  Citation contexts contained within a paper.  
     - **refs** *(Collection[str])*:  Reference information corresponding to the contexts.  
     - **meta** *(Dict[str, str])*:  Dictionary containing metadata of the citing paper.   
+    - **textpath** *(Path)*:  Path to a paper's textfile.  
     
     ## Output:  
     
@@ -242,7 +243,11 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.   
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
+    - **STOPWORDS** *(Set)*:
+        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
+
     
     ## Output:  
     

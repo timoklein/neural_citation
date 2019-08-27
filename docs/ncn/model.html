@@ -34,7 +34,7 @@ from torch import Tensor
 import ncn.core
 from ncn.core import Filters, DEVICE
 
-logger = logging.getLogger(&#34;neural_citation.ncn&#34;)
+logger = logging.getLogger(__name__)
 
 
 class TDNN(nn.Module):
@@ -145,16 +145,14 @@ class TDNNEncoder(nn.Module):
         return x.view(len(self.filter_list), -1, self.num_filters)
 
 
-
 class NCNEncoder(nn.Module):
     &#34;&#34;&#34;
     Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
-    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
@@ -203,7 +201,7 @@ class NCNEncoder(nn.Module):
         ## Output:  
         
         - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-            If authors= True the output tensor contains the concatenated context and author encodings.
+            If authors=True the output tensor contains the concatenated context and author encodings.
             Else the encoded context is returned.
         &#34;&#34;&#34;
         # Embed and encode context
@@ -908,13 +906,11 @@ Encoded context and author information. </li>
 </p>
 <h2 id="parameters">Parameters:</h2>
 <ul>
-<li><strong>context_filters</strong> <em>(int)</em>: List of ints representing the context filter lengths.
+<li><strong>context_filters</strong> <em>(Filters)</em>: List of ints representing the context filter lengths.
 </li>
-<li><strong>author_filters</strong> <em>(int)</em>: List of ints representing the author filter lengths.
+<li><strong>author_filters</strong> <em>(Filters)</em>: List of ints representing the author filter lengths.
 </li>
 <li><strong>context_vocab_size</strong> <em>(int)</em>: Size of the context vocabulary. Used to train context embeddings.
-</li>
-<li><strong>title_vocab_size</strong> <em>(int)</em>: Size of the title vocabulary. Used to train title embeddings.
 </li>
 <li><strong>author_vocab_size</strong> <em>(int)</em>: Size of the author vocabulary. Used to train author embeddings.
 </li>
@@ -935,10 +931,9 @@ Encoded context and author information. </li>
     Encoder for the NCN model. Initializes TDNN Encoders for context and authors and concatenates the output.    
     
     ## Parameters:  
-    - **context_filters** *(int)*: List of ints representing the context filter lengths.  
-    - **author_filters** *(int)*: List of ints representing the author filter lengths.  
+    - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
+    - **author_filters** *(Filters)*: List of ints representing the author filter lengths.  
     - **context_vocab_size** *(int)*: Size of the context vocabulary. Used to train context embeddings.  
-    - **title_vocab_size** *(int)*: Size of the title vocabulary. Used to train title embeddings.  
     - **author_vocab_size** *(int)*: Size of the author vocabulary. Used to train author embeddings.  
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
     - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
@@ -987,7 +982,7 @@ Encoded context and author information. </li>
         ## Output:  
         
         - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-            If authors= True the output tensor contains the concatenated context and author encodings.
+            If authors=True the output tensor contains the concatenated context and author encodings.
             Else the encoded context is returned.
         &#34;&#34;&#34;
         # Embed and encode context
@@ -1037,7 +1032,7 @@ Tensor containing a batch of cited author indices.</li>
 <h2 id="output">Output:</h2>
 <ul>
 <li><strong>output</strong> <em>(batch_size, total # of filters (authors, cntxt), embedding size)</em>:
-If authors= True the output tensor contains the concatenated context and author encodings.
+If authors=True the output tensor contains the concatenated context and author encodings.
 Else the encoded context is returned.</li>
 </ul></section>
 <details class="source">
@@ -1057,7 +1052,7 @@ Else the encoded context is returned.</li>
     ## Output:  
     
     - **output** *(batch_size, total # of filters (authors, cntxt), embedding size)*: 
-        If authors= True the output tensor contains the concatenated context and author encodings.
+        If authors=True the output tensor contains the concatenated context and author encodings.
         Else the encoded context is returned.
     &#34;&#34;&#34;
     # Embed and encode context
