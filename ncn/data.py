@@ -228,7 +228,7 @@ def prepare_data(path: PathOrStr) -> None:
     logger.info(f"Dataset with {len(dataset)} samples has been saved to: {save_path}.")
 
 
-def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set, identifier:str) -> List[str]:
+def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -> List[str]:
     """
     Applies the following preprocessing steps on a string:  
  
@@ -243,9 +243,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
-    - **STOPWORDS** *(Set)*:
-        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.      
     - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
 
     
@@ -256,7 +254,6 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     text = re.sub("\d*?", '', text)
     text = re.sub("[" + re.escape(string.punctuation) + "]", " ", text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
-    text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
@@ -322,25 +319,27 @@ def get_fields() -> Tuple[Field, Field, Field]:
     nlp = spacy.load("en_core_web_lg")
     tokenizer = Tokenizer(nlp.vocab)
     STOPWORDS = get_stopwords()
-    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer,
-                              STOPWORDS=STOPWORDS, identifier="context")
-    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, 
-                            STOPWORDS=STOPWORDS, identifier="title_cited")
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="context")
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier="title_cited")
 
     # instantiate fields preprocessing the relevant data
     TTL = Field(tokenize=ttl_tokenizer, 
+                stop_words=STOPWORDS,
                 init_token = '<sos>', 
                 eos_token = '<eos>',
                 lower=True)
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, batch_first=True)
+    CNTXT = Field(tokenize=cntxt_tokenizer, stop_words=STOPWORDS, lower=True, batch_first=True)
 
     return CNTXT, TTL, AUT
 
 
-def get_datasets(path_to_data: PathOrStr) -> BaseData:
+def get_datasets(path_to_data: PathOrStr, 
+                 len_context_vocab: int,
+                 len_title_vocab: int,
+                 len_aut_vocab: int) -> BaseData:
     """
     Initializes torchtext Field and TabularDataset objects used for training.
     The vocab of the author, context and title fields is built *on the whole dataset*
@@ -349,6 +348,9 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
     ## Parameters:  
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    - **len_context_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -370,16 +372,19 @@ def get_datasets(path_to_data: PathOrStr) -> BaseData:
 
     # build field vocab before splitting data
     logger.info("Building vocab...")
-    TTL.build_vocab(dataset, max_size=30000)
-    AUT.build_vocab(dataset, max_size=30000)
-    CNTXT.build_vocab(dataset, max_size=30000)
+    TTL.build_vocab(dataset, max_size=len_title_vocab)
+    AUT.build_vocab(dataset, max_size=len_aut_vocab)
+    CNTXT.build_vocab(dataset, max_size=len_context_vocab)
 
     # split dataset
     train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
     return BaseData(cntxt=CNTXT, ttl=TTL, aut=AUT, train=train, valid=valid, test=test)
 
 
-def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -> IteratorData:
+def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16,
+                             len_context_vocab: int = 30000,
+                             len_title_vocab: int = 30000,
+                             len_aut_vocab: int = 30000) -> IteratorData:
     """
     Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
@@ -387,6 +392,9 @@ def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -> I
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
     - **batch_size** *(int=32)*: BucketIterator minibatch size.  
+    - **len_context_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -394,7 +402,8 @@ def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -> I
         train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
     """
     
-    data = get_datasets(path_to_data=path_to_data)
+    data = get_datasets(path_to_data=path_to_data, len_context_vocab=len_context_vocab,
+                        len_title_vocab=len_title_vocab, len_aut_vocab=len_aut_vocab)
 
     # create bucketted iterators for each dataset
     train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 

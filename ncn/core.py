@@ -79,10 +79,10 @@ CITATION_PATTERNS = r"<DBLP:.*?>|<GC:.*?>"
 """Regex patterns for matching citations in document sentences."""
 
 
-MAX_TITLE_LENGTH = 15
+MAX_TITLE_LENGTH = 30
 """Maximum decoder sequence length. Also determines the number of attention weights."""
 
-MAX_CONTEXT_LENGTH = 35
+MAX_CONTEXT_LENGTH = 100
 """Maximum encoder sequence length."""
 
 MAX_AUTHORS = 5
