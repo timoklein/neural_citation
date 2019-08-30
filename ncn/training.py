@@ -203,7 +203,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
 
     # set up tensorboard and data logging
     date = datetime.now()
-    log_dir = Path(f"runs/{date.year}_NCN_{date.month}_{date.day}_{date.hour}")
+    log_dir = Path(f"runs/NCN_{date.month}_{date.day}_{date.hour}_{model_name}")
     writer = SummaryWriter(log_dir=log_dir)
 
     training_settings = (
