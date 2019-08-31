@@ -28,17 +28,18 @@ class Evaluator:
     - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
     - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
-    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of GRU layers.  
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
-    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
+    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.  
         Also holds initialized context, title and author fields.  
-    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
-        If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode). 
-    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
+    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.  
+        If True, only the test samples will be used (model evaluation mode).  
+        If False, the corpus is built from the complete dataset (inference mode).   
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.      
     """
     def __init__(self, context_filters: Filters, author_filters: Filters,
-                 num_filters: int, embed_size:int,
+                 num_filters: int, embed_size:int, num_layers: int,
                  path_to_weights: PathOrStr, data: BaseData, 
                  evaluate: bool = True, show_attention: bool = False):
         self.data = data
@@ -55,7 +56,7 @@ class Evaluator:
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=1,
+                                            num_layers=num_layers,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
                                             show_attention=show_attention)
