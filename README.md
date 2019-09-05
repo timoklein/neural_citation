@@ -64,4 +64,8 @@ Statistics about the dataset can be found in the NCN_presentation.ipynb file.
 
 
 ## Weights
+The model trained with the original settings by Ebesu and Fang can be found here: 
+https://drive.google.com/open?id=1mT7kUb415wy0i1raXTPMcrXcWSgRC2pk.  
+
+The model trained with our best configuration can be found here:
 
