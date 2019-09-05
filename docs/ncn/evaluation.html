@@ -52,17 +52,18 @@ class Evaluator:
     - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
     - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
-    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of GRU layers.  
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
-    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
+    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.  
         Also holds initialized context, title and author fields.  
-    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
-        If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode). 
-    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
+    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.  
+        If True, only the test samples will be used (model evaluation mode).  
+        If False, the corpus is built from the complete dataset (inference mode).   
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.      
     &#34;&#34;&#34;
     def __init__(self, context_filters: Filters, author_filters: Filters,
-                 num_filters: int, embed_size:int,
+                 num_filters: int, embed_size:int, num_layers: int,
                  path_to_weights: PathOrStr, data: BaseData, 
                  evaluate: bool = True, show_attention: bool = False):
         self.data = data
@@ -79,7 +80,7 @@ class Evaluator:
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=1,
+                                            num_layers=num_layers,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
                                             show_attention=show_attention)
@@ -355,7 +356,7 @@ class Evaluator:
 <dl>
 <dt id="ncn.evaluation.Evaluator"><code class="flex name class">
 <span>class <span class="ident">Evaluator</span></span>
-<span>(</span><span>context_filters: List[int], author_filters: List[int], num_filters: int, embed_size: int, path_to_weights: Union[pathlib.Path, str], data: <a title="ncn.core.BaseData" href="core.html#ncn.core.BaseData">BaseData</a>, evaluate: bool = True, show_attention: bool = False)</span>
+<span>(</span><span>context_filters: List[int], author_filters: List[int], num_filters: int, embed_size: int, num_layers: int, path_to_weights: Union[pathlib.Path, str], data: <a title="ncn.core.BaseData" href="core.html#ncn.core.BaseData">BaseData</a>, evaluate: bool = True, show_attention: bool = False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Evaluator class for the neural citation network. Uses a trained NCN model and BM-25 to perform
@@ -367,14 +368,18 @@ evaluation tasks on the test set or inference on the full dataset. </p>
 <li><strong>author_filters</strong> <em>(Filters)</em>: List of ints representing the author filter lengths. </li>
 <li><strong>num_filters</strong> <em>(int)</em>: Number of filters applied in the TDNN layers of the model.
 </li>
-<li><strong>embed_size</strong> <em>(int)</em>: Dimension of the learned author, context and title embeddings.</li>
+<li><strong>embed_size</strong> <em>(int)</em>: Dimension of the learned author, context and title embeddings.
+</li>
+<li><strong>num_layers</strong> <em>(int)</em>: Number of GRU layers.
+</li>
 <li><strong>path_to_weights</strong> <em>(PathOrStr)</em>: Path to the weights of a pretrained NCN model. </li>
-<li><strong>data</strong> <em>(BaseData)</em>: BaseData container holding train, valid, and test data.
+<li><strong>data</strong> <em>(BaseData)</em>: BaseData container holding train, valid, and test data.<br>
 Also holds initialized context, title and author fields.
 </li>
-<li><strong>evaluate</strong> <em>(bool=True)</em>: Determines the size of the BM-25 corpus used.
-If True, only the test samples will be used (model evaluation mode).
-If False, the corpus is built from the complete dataset (inference mode). </li>
+<li><strong>evaluate</strong> <em>(bool=True)</em>: Determines the size of the BM-25 corpus used.<br>
+If True, only the test samples will be used (model evaluation mode).<br>
+If False, the corpus is built from the complete dataset (inference mode).
+</li>
 <li><strong>show_attention</strong> <em>(bool=false)</em>: Returns attention tensors if true.</li>
 </ul></section>
 <details class="source">
@@ -388,17 +393,18 @@ If False, the corpus is built from the complete dataset (inference mode). </li>
     - **context_filters** *(Filters)*: List of ints representing the context filter lengths.  
     - **author_filters** *(Filters)*: List of ints representing the author filter lengths. 
     - **num_filters** *(int)*: Number of filters applied in the TDNN layers of the model.   
-    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.
+    - **embed_size** *(int)*: Dimension of the learned author, context and title embeddings.  
+    - **num_layers** *(int)*: Number of GRU layers.  
     - **path_to_weights** *(PathOrStr)*: Path to the weights of a pretrained NCN model. 
-    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.
+    - **data** *(BaseData)*: BaseData container holding train, valid, and test data.  
         Also holds initialized context, title and author fields.  
-    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.
-        If True, only the test samples will be used (model evaluation mode).
-        If False, the corpus is built from the complete dataset (inference mode). 
-    - **show_attention** *(bool=false)*: Returns attention tensors if true.    
+    - **evaluate** *(bool=True)*: Determines the size of the BM-25 corpus used.  
+        If True, only the test samples will be used (model evaluation mode).  
+        If False, the corpus is built from the complete dataset (inference mode).   
+    - **show_attention** *(bool=false)*: Returns attention tensors if true.      
     &#34;&#34;&#34;
     def __init__(self, context_filters: Filters, author_filters: Filters,
-                 num_filters: int, embed_size:int,
+                 num_filters: int, embed_size:int, num_layers: int,
                  path_to_weights: PathOrStr, data: BaseData, 
                  evaluate: bool = True, show_attention: bool = False):
         self.data = data
@@ -415,7 +421,7 @@ If False, the corpus is built from the complete dataset (inference mode). </li>
                                             num_filters=num_filters,
                                             authors=True, 
                                             embed_size=embed_size,
-                                            num_layers=1,
+                                            num_layers=num_layers,
                                             hidden_size=num_filters,
                                             dropout_p=0.2,
                                             show_attention=show_attention)

@@ -59,7 +59,7 @@ tqdm_notebook progress bars. When running these functions from a script this nee
 
 
 ## Data  
-The preprocessed dataset can be found here: https://www.dropbox.com/s/1481lpooa0wiu2u/arxiv_data.csv.zip?dl=0.  
+The preprocessed dataset can be found here: https://drive.google.com/open?id=1qwBIXBsWp0ODrm91pVgBOwelJ5baGr-9.  
 Statistics about the dataset can be found in the NCN_presentation.ipynb file.
 
 

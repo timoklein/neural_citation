@@ -252,7 +252,7 @@ def prepare_data(path: PathOrStr) -&gt; None:
     logger.info(f&#34;Dataset with {len(dataset)} samples has been saved to: {save_path}.&#34;)
 
 
-def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set, identifier:str) -&gt; List[str]:
+def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -&gt; List[str]:
     &#34;&#34;&#34;
     Applies the following preprocessing steps on a string:  
  
@@ -267,9 +267,7 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
-    - **STOPWORDS** *(Set)*:
-        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.      
     - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
 
     
@@ -280,7 +278,6 @@ def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set,
     text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
     text = re.sub(&#34;[&#34; + re.escape(string.punctuation) + &#34;]&#34;, &#34; &#34;, text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
-    text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
@@ -346,25 +343,27 @@ def get_fields() -&gt; Tuple[Field, Field, Field]:
     nlp = spacy.load(&#34;en_core_web_lg&#34;)
     tokenizer = Tokenizer(nlp.vocab)
     STOPWORDS = get_stopwords()
-    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer,
-                              STOPWORDS=STOPWORDS, identifier=&#34;context&#34;)
-    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, 
-                            STOPWORDS=STOPWORDS, identifier=&#34;title_cited&#34;)
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;context&#34;)
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;title_cited&#34;)
 
     # instantiate fields preprocessing the relevant data
     TTL = Field(tokenize=ttl_tokenizer, 
+                stop_words=STOPWORDS,
                 init_token = &#39;&lt;sos&gt;&#39;, 
                 eos_token = &#39;&lt;eos&gt;&#39;,
                 lower=True)
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, batch_first=True)
+    CNTXT = Field(tokenize=cntxt_tokenizer, stop_words=STOPWORDS, lower=True, batch_first=True)
 
     return CNTXT, TTL, AUT
 
 
-def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
+def get_datasets(path_to_data: PathOrStr, 
+                 len_context_vocab: int,
+                 len_title_vocab: int,
+                 len_aut_vocab: int) -&gt; BaseData:
     &#34;&#34;&#34;
     Initializes torchtext Field and TabularDataset objects used for training.
     The vocab of the author, context and title fields is built *on the whole dataset*
@@ -373,6 +372,9 @@ def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
     ## Parameters:  
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    - **len_context_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -394,16 +396,19 @@ def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
 
     # build field vocab before splitting data
     logger.info(&#34;Building vocab...&#34;)
-    TTL.build_vocab(dataset, max_size=30000)
-    AUT.build_vocab(dataset, max_size=30000)
-    CNTXT.build_vocab(dataset, max_size=30000)
+    TTL.build_vocab(dataset, max_size=len_title_vocab)
+    AUT.build_vocab(dataset, max_size=len_aut_vocab)
+    CNTXT.build_vocab(dataset, max_size=len_context_vocab)
 
     # split dataset
     train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
     return BaseData(cntxt=CNTXT, ttl=TTL, aut=AUT, train=train, valid=valid, test=test)
 
 
-def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -&gt; IteratorData:
+def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16,
+                             len_context_vocab: int = 30000,
+                             len_title_vocab: int = 30000,
+                             len_aut_vocab: int = 30000) -&gt; IteratorData:
     &#34;&#34;&#34;
     Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
@@ -411,6 +416,9 @@ def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -&gt
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
     - **batch_size** *(int=32)*: BucketIterator minibatch size.  
+    - **len_context_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -418,7 +426,8 @@ def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -&gt
         train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
     &#34;&#34;&#34;
     
-    data = get_datasets(path_to_data=path_to_data)
+    data = get_datasets(path_to_data=path_to_data, len_context_vocab=len_context_vocab,
+                        len_title_vocab=len_title_vocab, len_aut_vocab=len_aut_vocab)
 
     # create bucketted iterators for each dataset
     train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
@@ -652,7 +661,7 @@ Each sample has to have information for citation context, citing authors, cited 
 </details>
 </dd>
 <dt id="ncn.data.get_bucketized_iterators"><code class="name flex">
-<span>def <span class="ident">get_bucketized_iterators</span></span>(<span>path_to_data: Union[pathlib.Path, str], batch_size: int = 16) -> <a title="ncn.core.IteratorData" href="core.html#ncn.core.IteratorData">IteratorData</a></span>
+<span>def <span class="ident">get_bucketized_iterators</span></span>(<span>path_to_data: Union[pathlib.Path, str], batch_size: int = 16, len_context_vocab: int = 30000, len_title_vocab: int = 30000, len_aut_vocab: int = 30000) -> <a title="ncn.core.IteratorData" href="core.html#ncn.core.IteratorData">IteratorData</a></span>
 </code></dt>
 <dd>
 <section class="desc"><p>Gets path_to_data and delegates tasks to generate buckettized training iterators.
@@ -664,6 +673,15 @@ Path object or string to a .csv dataset.
 </li>
 <li><strong>batch_size</strong> <em>(int=32)</em>: BucketIterator minibatch size.
 </li>
+<li><strong>len_context_vocab</strong> <em>(int=30000)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
+<li><strong>len_title_vocab</strong> <em>(int=30000)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
+<li><strong>len_aut_vocab</strong> <em>(int=30000)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
 </ul>
 <h2 id="output">Output:</h2>
 <ul>
@@ -673,7 +691,10 @@ train_iterator (<em>BucketIterator</em>), valid_iterator (<em>BucketIterator</em
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16) -&gt; IteratorData:
+<pre><code class="python">def get_bucketized_iterators(path_to_data: PathOrStr, batch_size: int = 16,
+                             len_context_vocab: int = 30000,
+                             len_title_vocab: int = 30000,
+                             len_aut_vocab: int = 30000) -&gt; IteratorData:
     &#34;&#34;&#34;
     Gets path_to_data and delegates tasks to generate buckettized training iterators.  
     
@@ -681,6 +702,9 @@ train_iterator (<em>BucketIterator</em>), valid_iterator (<em>BucketIterator</em
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.  
     - **batch_size** *(int=32)*: BucketIterator minibatch size.  
+    - **len_context_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int=30000)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -688,7 +712,8 @@ train_iterator (<em>BucketIterator</em>), valid_iterator (<em>BucketIterator</em
         train_iterator (*BucketIterator*), valid_iterator (*BucketIterator*), test_iterator (*BucketIterator*) objects.
     &#34;&#34;&#34;
     
-    data = get_datasets(path_to_data=path_to_data)
+    data = get_datasets(path_to_data=path_to_data, len_context_vocab=len_context_vocab,
+                        len_title_vocab=len_title_vocab, len_aut_vocab=len_aut_vocab)
 
     # create bucketted iterators for each dataset
     train_iterator, valid_iterator, test_iterator = BucketIterator.splits((data.train, data.valid, data.test), 
@@ -700,7 +725,7 @@ train_iterator (<em>BucketIterator</em>), valid_iterator (<em>BucketIterator</em
 </details>
 </dd>
 <dt id="ncn.data.get_datasets"><code class="name flex">
-<span>def <span class="ident">get_datasets</span></span>(<span>path_to_data: Union[pathlib.Path, str]) -> <a title="ncn.core.BaseData" href="core.html#ncn.core.BaseData">BaseData</a></span>
+<span>def <span class="ident">get_datasets</span></span>(<span>path_to_data: Union[pathlib.Path, str], len_context_vocab: int, len_title_vocab: int, len_aut_vocab: int) -> <a title="ncn.core.BaseData" href="core.html#ncn.core.BaseData">BaseData</a></span>
 </code></dt>
 <dd>
 <section class="desc"><p>Initializes torchtext Field and TabularDataset objects used for training.
@@ -711,6 +736,15 @@ with vocab_size=30000 for all fields. The dataset is split into train, valid and
 <li><strong>path_to_data</strong> <em>(PathOrStr)</em>:
 Path object or string to a .csv dataset.
 </li>
+<li><strong>len_context_vocab</strong> <em>(int)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
+<li><strong>len_title_vocab</strong> <em>(int)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
+<li><strong>len_aut_vocab</strong> <em>(int)</em>:
+Maximum length of context vocab size before adding special tokens.
+</li>
 </ul>
 <h2 id="output">Output:</h2>
 <ul>
@@ -720,7 +754,10 @@ train (<em>TabularDataset</em>), valid (<em>TabularDataset</em>), test (<em>Tabu
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def get_datasets(path_to_data: PathOrStr) -&gt; BaseData:
+<pre><code class="python">def get_datasets(path_to_data: PathOrStr, 
+                 len_context_vocab: int,
+                 len_title_vocab: int,
+                 len_aut_vocab: int) -&gt; BaseData:
     &#34;&#34;&#34;
     Initializes torchtext Field and TabularDataset objects used for training.
     The vocab of the author, context and title fields is built *on the whole dataset*
@@ -729,6 +766,9 @@ train (<em>TabularDataset</em>), valid (<em>TabularDataset</em>), test (<em>Tabu
     ## Parameters:  
     
     - **path_to_data** *(PathOrStr)*:  Path object or string to a .csv dataset.   
+    - **len_context_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_title_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.  
+    - **len_aut_vocab** *(int)*:  Maximum length of context vocab size before adding special tokens.   
     
     ## Output:  
     
@@ -750,9 +790,9 @@ train (<em>TabularDataset</em>), valid (<em>TabularDataset</em>), test (<em>Tabu
 
     # build field vocab before splitting data
     logger.info(&#34;Building vocab...&#34;)
-    TTL.build_vocab(dataset, max_size=30000)
-    AUT.build_vocab(dataset, max_size=30000)
-    CNTXT.build_vocab(dataset, max_size=30000)
+    TTL.build_vocab(dataset, max_size=len_title_vocab)
+    AUT.build_vocab(dataset, max_size=len_aut_vocab)
+    CNTXT.build_vocab(dataset, max_size=len_context_vocab)
 
     # split dataset
     train, valid, test = dataset.split([0.8,0.1,0.1], random_state = state)
@@ -797,20 +837,19 @@ Numeric data is returned as [batch_size, seq_length] for TDNN consumption.</li>
     nlp = spacy.load(&#34;en_core_web_lg&#34;)
     tokenizer = Tokenizer(nlp.vocab)
     STOPWORDS = get_stopwords()
-    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer,
-                              STOPWORDS=STOPWORDS, identifier=&#34;context&#34;)
-    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, 
-                            STOPWORDS=STOPWORDS, identifier=&#34;title_cited&#34;)
+    cntxt_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;context&#34;)
+    ttl_tokenizer = partial(title_context_preprocessing, tokenizer=tokenizer, identifier=&#34;title_cited&#34;)
 
     # instantiate fields preprocessing the relevant data
     TTL = Field(tokenize=ttl_tokenizer, 
+                stop_words=STOPWORDS,
                 init_token = &#39;&lt;sos&gt;&#39;, 
                 eos_token = &#39;&lt;eos&gt;&#39;,
                 lower=True)
 
     AUT = Field(tokenize=author_preprocessing, batch_first=True, lower=True)
 
-    CNTXT = Field(tokenize=cntxt_tokenizer, lower=True, batch_first=True)
+    CNTXT = Field(tokenize=cntxt_tokenizer, stop_words=STOPWORDS, lower=True, batch_first=True)
 
     return CNTXT, TTL, AUT</code></pre>
 </details>
@@ -964,7 +1003,7 @@ The resulting DataFrame is saved as Python pickle object in the parent directory
 </details>
 </dd>
 <dt id="ncn.data.title_context_preprocessing"><code class="name flex">
-<span>def <span class="ident">title_context_preprocessing</span></span>(<span>text: str, tokenizer: spacy.tokenizer.Tokenizer, STOPWORDS: Set, identifier: str) -> List[str]</span>
+<span>def <span class="ident">title_context_preprocessing</span></span>(<span>text: str, tokenizer: spacy.tokenizer.Tokenizer, identifier: str) -> List[str]</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Applies the following preprocessing steps on a string:
@@ -990,9 +1029,6 @@ The resulting DataFrame is saved as Python pickle object in the parent directory
 </li>
 <li><strong>tokenizer</strong> <em>(spacy.tokenizer.Tokenizer)</em>: SpaCy tokenizer object used to split the string into tokens.
 </li>
-<li><strong>STOPWORDS</strong> <em>(Set)</em>:
-Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.
-</li>
 <li><strong>identifier</strong> <em>(str)</em>: A string determining whether a title or a context is passed as text.
 </li>
 </ul>
@@ -1003,7 +1039,7 @@ List containing the preprocessed tokens.</li>
 </ul></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def title_context_preprocessing(text: str, tokenizer: Tokenizer, STOPWORDS: Set, identifier:str) -&gt; List[str]:
+<pre><code class="python">def title_context_preprocessing(text: str, tokenizer: Tokenizer, identifier:str) -&gt; List[str]:
     &#34;&#34;&#34;
     Applies the following preprocessing steps on a string:  
  
@@ -1018,9 +1054,7 @@ List containing the preprocessed tokens.</li>
     ## Parameters:  
     
     - **text** *(str)*: Text input to be processed.  
-    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.  
-    - **STOPWORDS** *(Set)*:
-        Set of stopwords which are removed during preprocessing. This programm uses the union set of stopwords from both spacy and nltk.    
+    - **tokenizer** *(spacy.tokenizer.Tokenizer)*: SpaCy tokenizer object used to split the string into tokens.      
     - **identifier** *(str)*: A string determining whether a title or a context is passed as text.  
 
     
@@ -1031,7 +1065,6 @@ List containing the preprocessed tokens.</li>
     text = re.sub(&#34;\d*?&#34;, &#39;&#39;, text)
     text = re.sub(&#34;[&#34; + re.escape(string.punctuation) + &#34;]&#34;, &#34; &#34;, text)
     text = [token.lemma_ for token in tokenizer(text) if not token.like_num]
-    text = [token for token in text if not token in STOPWORDS]
     text = [token for token in text if token.strip()]
 
     # return the sequence up to max length or totally if shorter
