@@ -68,5 +68,11 @@ The model trained with the original settings by Ebesu and Fang can be found here
 https://drive.google.com/open?id=1mT7kUb415wy0i1raXTPMcrXcWSgRC2pk.  
 
 The model trained with our best configuration can be found here: 
-https://drive.google.com/open?id=1xhupsNpSzDSS3_C-IJpMAPnts3kXdg-5.
+https://drive.google.com/open?id=1xhupsNpSzDSS3_C-IJpMAPnts3kXdg-5.  
+
+
+## Results  
+We provide a writeup containing the detailed results and further information about our setup here:
+
+
 

@@ -54,6 +54,7 @@ def init_weights(m):
 def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
     """
     Measures the time elapsed between two time stamps.  
+    Taken from: https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
@@ -71,6 +72,7 @@ def train(model: nn.Module, iterator: BucketIterator,
           optimizer: optim, criterion: nn.Module, clip: float) -> float:
     """
     Trains the NCN model for a single epoch.  
+    Based on: https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
@@ -128,7 +130,8 @@ def train(model: nn.Module, iterator: BucketIterator,
 
 def evaluate(model: nn.Module, iterator: BucketIterator, criterion: nn.Module):
     """
-    Puts the model in eval mode and evaluates on a single epoch without computing gradients.
+    Puts the model in eval mode and evaluates on a single epoch without computing gradients.  
+    Based on: https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
@@ -175,6 +178,7 @@ def train_model(model: nn.Module, train_iterator: BucketIterator, valid_iterator
                 save_dir: PathOrStr = "./models") -> Tuple[List[float]]:
     """
     Main training function for the NCN model.  
+    Based on: https://github.com/bentrevett/pytorch-seq2seq.  
     
     ## Parameters:  
     
