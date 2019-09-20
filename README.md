@@ -76,3 +76,11 @@ We provide a writeup containing the detailed results and further information abo
 https://www.dropbox.com/s/u694zr24cbuo3ux/NCN_reproducibility.pdf?dl=0.
 
 
+## Use this work  
+Feel free to use our source code and results. 
+
+	@article{NCNRepro2019, 
+		title={A Reproducibility Analysis on the Neural CitationNetwork (NCN)}, 
+		author={Klein, Timo and Sigloch, Joan}, 
+		year={2019}, 
+	}
