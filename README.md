@@ -53,6 +53,7 @@ tqdm_notebook progress bars. When running these functions from a script this nee
     ├── NCN_evaluation.ipynb # notebook for performing evaluation tasks
     ├── NCN_presentation.ipynb # presentation given about project, contains small inference demo
     ├── NCN_training.ipynb # training containing the high level training script
+    ├── generate_dicts.ipynb # notebook to generate title_to_aut_cited and title_tokenized_to_full dicts for inference
     └── neural_citation.yml # CPU conda environment
 
 
