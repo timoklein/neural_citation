@@ -73,15 +73,29 @@ https://drive.google.com/open?id=1xhupsNpSzDSS3_C-IJpMAPnts3kXdg-5.
 
 
 ## Results  
-We provide a writeup containing the detailed results and further information about our setup here:
-https://www.dropbox.com/s/u694zr24cbuo3ux/NCN_reproducibility.pdf?dl=0.
+Link to the workshop paper:
+https://www.aifb.kit.edu/images/8/82/CiteRec_Repro_BIR2020.pdf.
 
 
 ## Use this work  
 Feel free to use our source code and results. 
 
-	@article{NCNRepro2020, 
-		title={eural Citation Recommendation:  A Reproducibility Study}, 
-		author={F{\"a}rber, Michael and Klein, Timo and Sigloch, Joan} 
-		year={2020}, 
+	@inproceedings{FaerberKleinSigloch2020_1000119469,
+	    author       = {Färber, M. and Klein, T. and Sigloch, J.},
+	    year         = {2020},
+	    title        = {Neural citation recommendation: A reproducibility study},
+	    pages        = {66-74},
+	    eventtitle   = {10th International Workshop on Bibliometric-enhanced Information Retrieval},
+	    eventtitleaddon = {2020},
+	    eventdate    = {2020-04-14/},
+	    venue        = {Lissabon, Portugal},
+	    booktitle    = {Bibliometric-enhanced Information Retrieval : Proceedings of the 10th International Workshop
+	co-located with 42nd European Conference on Information Retrieval (ECIR 2020), Lisbon, Portugal (online only), April 14th, 2020. Ed.: G. Cabanac},
+	    publisher    = {{CEUR-WS}},
+	    issn         = {1613-0073},
+	    series       = {CEUR Workshop Proceedings},
+	    url          = {http://ceur-ws.org/Vol-2591/paper-07.pdf},
+	    language     = {english},
+	    volume       = {2591}
 	}
+
