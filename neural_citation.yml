@@ -3,7 +3,6 @@ channels:
   - pytorch
   - anaconda
   - conda-forge
-  - http://conda.anaconda.org/gurobi
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
@@ -19,7 +18,6 @@ dependencies:
   - cryptography=2.7=py37h72c5cf5_0
   - cycler=0.10.0=py_1
   - cymem=2.0.2=py37he1b5a44_0
-  - cython-blis=0.2.4=py37h516909a_0
   - dbus=1.13.6=he372182_0
   - decorator=4.4.0=py37_1
   - defusedxml=0.6.0=py_0
@@ -75,7 +73,6 @@ dependencies:
   - numpy=1.16.4=py37h7e9f1db_0
   - numpy-base=1.16.4=py37hde5b4d6_0
   - olefile=0.46=py37_0
-  - openssl=1.1.1=h7b6447c_0
   - pandas=0.25.0=py37he6710b0_0
   - pandoc=2.7.3=0
   - pandocfilters=1.4.2=py37_1
@@ -138,7 +135,6 @@ dependencies:
     - boto3==1.9.193
     - botocore==1.12.193
     - docutils==0.14
-    - en-core-web-lg==2.1.0
     - gensim==3.8.0
     - grpcio==1.22.0
     - jmespath==0.9.4
