@@ -24,7 +24,18 @@ For training the model it is recommended to use the GPU version of Pytorch inste
 Install dependencies and clone the repo. The training notebook contains a training  template.
 The evaluation notebook shows an example of how model evaluations can be run.
 Note that both training and evaluation functions are optimized for use in notebooks as they use
-tqdm_notebook progress bars. When running these functions from a script this needs to be changed.  
+tqdm_notebook progress bars. When running these functions from a script this needs to be changed. 
+
+#### spaCy can't find the language model
+If you can't fetch the language model with
+```python
+python -m spacy download en_core_web_sm
+```
+please try to download and install the model via pip. This has worked for me when reproducing the environment.
+
+```python
+pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-2.1.0/en_core_web_lg-2.1.0.tar.gz --no-deps 
+```
 
 ## Project structure: 
     
